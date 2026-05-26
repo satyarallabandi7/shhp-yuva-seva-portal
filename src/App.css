@@ -1,0 +1,881 @@
+* { box-sizing: border-box; }
+html, body, #root { margin: 0; width: 100%; min-height: 100%; }
+body { overflow-x: hidden; font-family: "Trebuchet MS", Arial, sans-serif; background: #fff6e9; color: #24130f; }
+button { font-family: inherit; }
+.app { min-height: 100vh; background: linear-gradient(135deg, #fff8ee 0%, #fff1dc 100%); }
+.header { width: 100%; min-height: 92px; background: rgba(255,255,255,.98); border-bottom: 2px solid #f2bc75; display: grid; grid-template-columns: auto 1fr auto; align-items: center; padding: 14px 42px; gap: 22px; position: sticky; top: 0; z-index: 10; }
+.brand { display: flex; align-items: center; gap: 12px; background: transparent; border: none; cursor: pointer; text-align: left; }
+.templeIcon { font-size: 44px; }.brand h2 { margin: 0; color: #870b18; font-family: Georgia, serif; font-size: 30px; }.brand p { margin: 2px 0 0; color: #e74213; font-family: Georgia, serif; font-size: 20px; font-weight: bold; }
+.nav { display: flex; align-items: center; justify-content: center; gap: 10px; }.nav button { background: #fff8ed; border: 1px solid transparent; border-radius: 999px; font-weight: 800; font-size: 15px; color: #24130f; cursor: pointer; padding: 11px 15px; white-space: nowrap; }
+.applyTop, .primaryBtn { border: none; background: linear-gradient(135deg, #f04b15, #97091a); color: white; border-radius: 14px; padding: 16px 26px; font-weight: 800; font-size: 17px; cursor: pointer; box-shadow: 0 8px 18px rgba(151,9,26,.22); white-space: nowrap; }
+.secondaryBtn { border: 1px solid #8a0b18; background: white; color: #8a0b18; border-radius: 10px; padding: 13px 22px; font-weight: 800; font-size: 16px; cursor: pointer; margin: 20px auto 0; display: block; }.inlineBtn { margin: 0; }.smallBtn { font-size: 15px; padding: 12px 18px; margin-top: 12px; }
+.heroNoImage { min-height: calc(100vh - 92px); padding: 54px 52px 34px; background: radial-gradient(circle at 18% 12%, rgba(255,173,79,.22), transparent 25%), linear-gradient(135deg,#fff9ef 0%,#fff2dd 100%); }.heroContent { width: min(1450px, 100%); margin: 0 auto; }.heroText { text-align: center; margin-bottom: 34px; }.heroText h1 { margin: 0; font-family: Georgia, serif; color: #870b18; font-size: clamp(44px,5vw,76px); line-height: 1.04; }.heroText h1 span { display: block; color: #e84914; }.lotusDivider { display: flex; align-items: center; justify-content: center; gap: 18px; color: #e84914; font-size: 30px; margin: 22px 0 16px; }.lotusDivider span { width: 105px; height: 2px; background: linear-gradient(90deg,transparent,#e84914,transparent); }.heroText h3 { margin: 0 0 14px; font-family: Georgia, serif; font-size: clamp(28px,3vw,42px); }.heroText p { margin: 0 auto; max-width: 580px; font-size: 22px; line-height: 1.45; }
+.portalCards { display: grid; grid-template-columns: repeat(3,1fr); gap: 28px; margin: 38px auto 28px; max-width: 1260px; }.portalCard { min-height: 136px; border: none; border-radius: 18px; padding: 26px 28px; color: white; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 22px; cursor: pointer; text-align: left; box-shadow: 0 12px 22px rgba(0,0,0,.15); }.portalCard h3 { margin: 0 0 8px; font-size: 25px; }.portalCard p { margin: 0; font-size: 17px; }.portalCard b { font-size: 58px; line-height: 1; }.circleIcon { width: 74px; height: 74px; background: white; color: #111; border-radius: 50%; display: grid; place-items: center; font-size: 34px; }.redCard { background: linear-gradient(135deg,#b0001b,#800716); }.orangeCard { background: linear-gradient(135deg,#ff5a0a,#e63e06); }.navyCard { background: linear-gradient(135deg,#061b3d,#09295c); }
+.infoFooter { max-width: 1420px; margin: 0 auto; background: rgba(255,255,255,.82); border: 1px solid #f3c98e; border-radius: 22px; padding: 34px 38px; display: grid; grid-template-columns: 1.15fr 1fr 1.1fr; gap: 30px; box-shadow: 0 10px 24px rgba(87,30,0,.08); }.infoFooter h2 { font-family: Georgia, serif; color: #8a0b18; }.infoFooter p { font-size: 20px; line-height: 1.45; }.timePill { display: inline-block; background: #fff2df; border: 1px solid #efc287; border-radius: 8px; padding: 9px 16px; font-size: 20px; margin: 6px 8px 12px 0; }.om { width: 90px; height: 90px; border-radius: 50%; display: grid; place-items: center; background: #fff0dd; color: #e84914; font-size: 54px; margin: auto; }
+.topBar { min-height: 64px; background: #850816; color: white; display: flex; align-items: center; gap: 14px; padding: 12px 28px; flex-wrap: wrap; }.topBar button { background: #fff7ed; color: #850816; border: none; border-radius: 18px; padding: 9px 18px; font-weight: 800; cursor: pointer; }.topBar h3 { margin: 0 0 0 auto; font-size: 20px; }.innerPage { min-height: calc(100vh - 64px); padding: 38px 24px; background: radial-gradient(circle at top left, rgba(255,173,79,.18), transparent 30%), linear-gradient(135deg,#fff8ee,#fff1dc); }
+.formCard, .contentCard, .successCard, .dashCard, .loginCard, .studentPanel { width: min(980px,100%); margin: 0 auto 22px; background: white; border-radius: 20px; padding: 34px; box-shadow: 0 12px 26px rgba(87,30,0,.08); border: 1px solid #f1d0a5; }.loginCard { width: min(540px,100%); text-align: center; }.adminMini { margin-top: 18px; background: #fff8ed; }.dashboardHeader { width: min(980px,100%); margin: 0 auto 22px; }.dashboardHeader h1, .formCard h1, .contentCard h1, .successCard h1, .loginCard h1 { font-family: Georgia, serif; color: #24130f; margin-top: 0; }.dashboardHeader p { margin-top: 0; font-size: 18px; }
+.formGrid, .statsGrid, .credentialGrid, .tierGrid { display: grid; grid-template-columns: repeat(2,1fr); gap: 18px; }.statsGrid { width: min(980px,100%); margin: 0 auto 22px; grid-template-columns: repeat(3,1fr); }.adminStats { width: min(1180px,100%); grid-template-columns: repeat(4,1fr); }
+.inputGroup { display: flex; flex-direction: column; gap: 8px; font-weight: 800; margin-bottom: 18px; text-align: left; }.compactInput { max-width: 280px; }.inputGroup input, .inputGroup select, .searchInput { border: 1px solid #d8c2ab; border-radius: 10px; padding: 14px; font-size: 16px; background: white; }.inputGroup b { color: #e84914; }.statCard, .credentialCard, .tierCard { background: white; border: 1px solid #f1d0a5; border-radius: 18px; padding: 24px; box-shadow: 0 10px 20px rgba(87,30,0,.06); }.statCard h2, .credentialCard h3 { margin: 0; color: #8a0b18; font-size: 34px; }
+.consentBox, .emailBox, .note, .interestBox { margin: 16px 0 24px; background: #fff8ed; border: 1px solid #efb46a; border-radius: 16px; padding: 22px; }.interestGrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }.interestOption { background: white; border: 1px solid #f1d0a5; border-radius: 12px; padding: 12px; font-weight: 800; display: flex; gap: 10px; align-items: center; }
+.errorText { color: #b00020; font-weight: 800; background: #fff0f2; border-radius: 10px; padding: 10px; }.successText { color: #166534; font-weight: 800; }.smallMuted { color: #6d625e; font-size: 14px; margin-top: 18px; }.buttonRow { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; }
+.adminToolbar, .adminWide { width: min(1180px,100%); margin: 0 auto 20px; }.searchInput { width: 100%; }.adminTabs { width: min(1180px,100%); margin: 20px auto; display: flex; gap: 10px; flex-wrap: wrap; }.adminTabs button { border: 1px solid #f1d0a5; background: white; color: #8a0b18; border-radius: 999px; padding: 12px 18px; font-weight: 900; cursor: pointer; }.adminTabs .activeTab { background: linear-gradient(135deg,#f04b15,#97091a); color: white; }
+.adminListItem, .historyItem, .eventAdminCard, .emailPreview, .miniItem { display: flex; justify-content: space-between; gap: 18px; align-items: center; background: #fff8ed; border: 1px solid #f1d0a5; border-radius: 14px; padding: 18px; margin-bottom: 14px; }.eventAdminCard, .emailPreview, .miniItem { display: block; }.adminActions { min-width: 180px; display: grid; gap: 8px; }.statusBadge { border-radius: 999px; padding: 8px 14px; font-weight: 900; }.statusBadge.pending { background: #fff3cd; color: #854d0e; }.statusBadge.approved { background: #dcfce7; color: #166534; }.statusBadge.rejected { background: #fee2e2; color: #991b1b; }
+.studentPortalPage { min-height: 100vh; background: linear-gradient(135deg, #fff8ee, #fff1dc); }.studentPortalTop { background: #850816; color: white; padding: 22px 34px; display: flex; justify-content: space-between; align-items: center; gap: 18px; }.studentPortalTop h1 { margin: 0; font-family: Georgia, serif; }.studentPortalTop p { margin: 4px 0 0; font-weight: 800; }.studentTopActions { display: flex; gap: 12px; flex-wrap: wrap; }.logoutBtn { background: white; color: #850816; border: none; border-radius: 999px; padding: 12px 22px; font-weight: 900; cursor: pointer; }.studentTabs { background: white; border-bottom: 1px solid #f1d0a5; display: flex; gap: 10px; padding: 14px 24px; overflow-x: auto; position: sticky; top: 0; z-index: 3; }.studentTabs button { border: 1px solid #f1d0a5; background: #fff8ed; color: #8a0b18; border-radius: 999px; padding: 12px 18px; font-weight: 900; cursor: pointer; white-space: nowrap; }.studentTabs .activeStudentTab { background: linear-gradient(135deg, #f04b15, #97091a); color: white; border-color: transparent; }.studentPortalContent { padding: 34px 24px; }.studentTabStack { width: min(1180px, 100%); margin: 0 auto; }.studentPanel { width: 100%; }.innerPanel { margin-top: 22px; background: #fffefa; }
+.monthGrid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; margin-bottom: 12px; }.monthHeader { text-align: center; color: #8a0b18; }.monthDay, .blankDay { border: 1px solid #f1d0a5; background: white; border-radius: 12px; min-height: 64px; cursor: pointer; display: grid; place-items: center; color: #24130f; font-weight: 900; }.blankDay { background: transparent; border: none; cursor: default; }.monthDay small { color: #166534; font-size: 11px; }.selectedMonthDay { background: #8a0b18; color: white; }.hasSlotsDay { border-color: #efb46a; }.hasSignupDay { box-shadow: inset 0 0 0 2px #86efac; }
+.slotListItem { width: 100%; border: 1px solid #f1d0a5; background: white; border-radius: 14px; padding: 16px; margin-bottom: 12px; text-align: left; display: flex; justify-content: space-between; gap: 12px; cursor: pointer; }.slotListItem b { color: #24130f; }.slotListItem span { font-weight: 900; color: #8a0b18; }.slotListItem:disabled { opacity: .7; cursor: not-allowed; }.signedSlot { background: #dcfce7; color: #166534; border-color: #86efac; }.selectedSlot { background: #fff3cd; color: #854d0e; border-color: #f4c768; }
+.selectionBar { display: flex; align-items: center; justify-content: space-between; gap: 16px; background: #fff8ed; border: 1px solid #f1d0a5; border-radius: 14px; padding: 16px; margin-top: 18px; }.successNotice { background: #dcfce7; color: #166534; padding: 14px 16px; border-radius: 14px; margin-top: 14px; font-weight: 800; display: flex; align-items: center; justify-content: space-between; gap: 12px; }.successNotice button { border: none; background: white; color: #166534; border-radius: 999px; padding: 8px 14px; font-weight: 900; cursor: pointer; }
+.simpleHomeHeader { display: flex; justify-content: space-between; align-items: center; gap: 18px; margin-bottom: 18px; }.simpleHomeHeader h2 { margin: 0 0 6px; }.simpleHomeHeader p { margin: 0; color: #6d625e; }.upcomingSlot { display: flex; justify-content: space-between; align-items: center; gap: 18px; background: #fff8ed; border: 1px solid #f1d0a5; border-radius: 16px; padding: 18px; margin-bottom: 14px; }.upcomingSlot p { margin: 6px 0 0; }.cancelSlotBtn { border: 1px solid #991b1b; background: white; color: #991b1b; border-radius: 999px; padding: 10px 16px; font-weight: 900; cursor: pointer; }.emptyState { background: #fff8ed; border: 1px dashed #efb46a; border-radius: 16px; padding: 24px; text-align: center; }.emptyState h3 { margin-top: 0; color: #8a0b18; }
+.signInBox { background: #fff8ed; border: 1px solid #f1d0a5; border-radius: 16px; padding: 20px; }.codeGrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }.codeCard { background: #fff8ed; border: 1px solid #f1d0a5; border-radius: 18px; padding: 22px; text-align: center; }.codeCard span { font-weight: 900; color: #8a0b18; }.codeCard h3 { font-size: 30px; color: #24130f; }.pastCodeRow { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; background: #fff8ed; border: 1px solid #f1d0a5; border-radius: 12px; padding: 14px; margin-bottom: 10px; }.editSlotCard { background: #fff8ed; border: 1px solid #f1d0a5; border-radius: 16px; padding: 18px; margin-bottom: 18px; }
+.modalOverlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: grid; place-items: center; z-index: 999; padding: 20px; }.modalCard { width: min(520px, 100%); background: white; border-radius: 20px; padding: 30px; border: 1px solid #f1d0a5; box-shadow: 0 20px 40px rgba(0,0,0,.25); text-align: center; }.modalCard h2 { color: #8a0b18; font-family: Georgia, serif; margin-top: 0; }.tierFocus progress { width: 100%; height: 18px; accent-color: #8a0b18; margin-bottom: 24px; }.steps { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }.step, .tierCard { background: #fff8ed; border: 1px solid #f1d0a5; border-radius: 16px; padding: 20px; }.tierCard h3 { color: #8a0b18; margin-bottom: 6px; }.styledInner { font-size: 20px; line-height: 1.65; }.styledInner h1 { font-size: 46px; color: #24130f; margin-bottom: 24px; }
+@media (max-width: 1180px) { .header { grid-template-columns: 1fr; justify-items: center; padding: 14px 24px; } .nav { flex-wrap: wrap; } }
+@media (max-width: 900px) { .portalCards, .infoFooter, .formGrid, .statsGrid, .adminStats, .credentialGrid, .tierGrid, .steps, .interestGrid, .codeGrid { grid-template-columns: 1fr; } .adminListItem, .historyItem, .slotListItem, .studentPortalTop, .selectionBar, .successNotice, .simpleHomeHeader, .upcomingSlot { display: block; } .heroNoImage { padding: 30px 18px; } .heroText h1 { font-size: 42px; } .monthGrid { grid-template-columns: repeat(4, 1fr); } .monthHeader { display: none; } .studentTabs { padding: 12px; } .topBar h3 { margin-left: 0; } .cancelSlotBtn { margin-top: 12px; } .pastCodeRow { grid-template-columns: 1fr; } }
+
+
+.parentKidCard {
+  background: #fff8ed;
+  border: 1px solid #f1d0a5;
+  border-radius: 18px;
+  padding: 22px;
+  margin-bottom: 22px;
+}
+
+.parentKidHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.parentKidHeader h3 {
+  margin: 0 0 6px;
+  color: #8a0b18;
+  font-family: Georgia, serif;
+  font-size: 28px;
+}
+
+.parentKidHeader p {
+  margin: 0;
+  color: #6d625e;
+}
+
+.parentKidCard progress {
+  width: 100%;
+  height: 18px;
+  accent-color: #8a0b18;
+  margin: 14px 0 20px;
+}
+
+@media (max-width: 900px) {
+  .parentKidHeader {
+    display: block;
+  }
+}
+
+
+/* V13 polish */
+.header {
+  min-height: 112px;
+  padding: 18px 56px;
+}
+.brand h2 {
+  font-size: 36px;
+  font-family: "Trebuchet MS", Arial, sans-serif;
+}
+.brand p {
+  font-size: 23px;
+}
+.nav button {
+  font-size: 17px;
+  padding: 14px 20px;
+}
+.applyTop,
+.primaryBtn {
+  font-size: 19px;
+  padding: 18px 30px;
+}
+.heroNoImage {
+  min-height: calc(100vh - 112px);
+  padding: 72px 52px 44px;
+}
+.heroKicker {
+  display: inline-block;
+  background: #fff0dd;
+  border: 1px solid #efb46a;
+  color: #8a0b18;
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-weight: 900;
+  margin-bottom: 18px !important;
+}
+.heroText h1 {
+  font-family: "Trebuchet MS", Arial, sans-serif;
+  font-size: clamp(54px, 6vw, 88px);
+  letter-spacing: -1px;
+}
+.heroText h3 {
+  font-family: "Trebuchet MS", Arial, sans-serif;
+  font-size: clamp(34px, 4vw, 52px);
+}
+.heroText p {
+  font-size: 24px;
+  max-width: 760px;
+}
+.portalCards {
+  max-width: 1400px;
+  gap: 34px;
+  margin-top: 48px;
+}
+.portalCard {
+  min-height: 172px;
+  padding: 34px;
+  border-radius: 26px;
+}
+.portalCard h3 {
+  font-size: 31px;
+}
+.portalCard p {
+  font-size: 20px;
+}
+.circleIcon {
+  width: 88px;
+  height: 88px;
+  font-size: 42px;
+}
+.whyMiniGrid {
+  max-width: 1320px;
+  margin: 28px auto;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+.whyMiniGrid > div {
+  background: white;
+  border: 1px solid #f1d0a5;
+  border-radius: 20px;
+  padding: 22px;
+  box-shadow: 0 10px 20px rgba(87,30,0,.06);
+}
+.whyMiniGrid b {
+  color: #8a0b18;
+  font-size: 20px;
+}
+.studentPortalTop {
+  padding: 28px 42px;
+}
+.studentPortalTop h1 {
+  font-family: "Trebuchet MS", Arial, sans-serif;
+  font-size: 34px;
+}
+.logoutBtn {
+  font-size: 17px;
+  padding: 14px 24px;
+}
+.studentTabs {
+  gap: 14px;
+  padding: 18px 30px;
+}
+.studentTabs button,
+.adminTabs button,
+.topBar button {
+  font-size: 18px;
+  padding: 15px 24px;
+}
+.studentPanel,
+.dashCard,
+.formCard,
+.contentCard,
+.successCard {
+  border-radius: 26px;
+  padding: 42px;
+}
+.studentPanel h2,
+.dashCard h2,
+.contentCard h1,
+.dashboardHeader h1 {
+  font-family: "Trebuchet MS", Arial, sans-serif;
+}
+.inputGroup input,
+.inputGroup select,
+.searchInput {
+  font-size: 18px;
+  padding: 17px;
+}
+.slotListItem {
+  font-size: 18px;
+  border-radius: 18px;
+  padding: 20px;
+}
+.spotsText {
+  display: block;
+  margin-top: 8px;
+  color: #854d0e !important;
+  font-weight: 900;
+}
+.fullSlot {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+.kidHelpText {
+  background: #fff8ed;
+  border: 1px solid #efb46a;
+  border-radius: 16px;
+  padding: 16px;
+  font-weight: 800;
+}
+.whyJoinGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-top: 28px;
+}
+.whyJoinCard {
+  border-radius: 24px;
+  padding: 30px;
+  border: 1px solid #f1d0a5;
+  background: #fff8ed;
+}
+.whyJoinCard h2 {
+  color: #8a0b18;
+  margin-top: 0;
+}
+.whyJoinCard li {
+  margin-bottom: 12px;
+}
+.middleSchoolCard {
+  background: #fff8ed;
+}
+.highSchoolCard {
+  background: #eef6ff;
+}
+.whyFunRow {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 24px;
+}
+.whyFunRow span {
+  background: white;
+  border: 1px solid #f1d0a5;
+  border-radius: 999px;
+  padding: 12px 18px;
+  font-weight: 900;
+  color: #8a0b18;
+}
+@media (max-width: 900px) {
+  .whyMiniGrid,
+  .whyJoinGrid {
+    grid-template-columns: 1fr;
+  }
+  .header {
+    padding: 16px 20px;
+  }
+  .heroText h1 {
+    font-size: 44px;
+  }
+}
+
+
+/* V14 restore + auto-hours polish */
+body {
+  font-family: "Trebuchet MS", Arial, sans-serif;
+  font-size: 19px;
+}
+
+.header {
+  min-height: 118px !important;
+  padding: 18px 64px !important;
+  background: rgba(255,255,255,.98);
+}
+
+.brand h2 {
+  font-size: 40px !important;
+  letter-spacing: .4px;
+}
+
+.brand p {
+  font-size: 25px !important;
+}
+
+.nav button {
+  font-size: 18px !important;
+  padding: 15px 22px !important;
+}
+
+.applyTop,
+.primaryBtn {
+  font-size: 20px !important;
+  padding: 18px 32px !important;
+  border-radius: 16px !important;
+}
+
+.heroNoImage {
+  min-height: calc(100vh - 118px) !important;
+  padding: 76px 60px 52px !important;
+}
+
+.heroContent {
+  width: min(1500px, 100%) !important;
+}
+
+.heroText h1 {
+  font-size: clamp(64px, 6vw, 104px) !important;
+  line-height: .98 !important;
+  font-family: "Trebuchet MS", Arial, sans-serif !important;
+}
+
+.heroText h3 {
+  font-size: clamp(38px, 4vw, 58px) !important;
+  font-family: "Trebuchet MS", Arial, sans-serif !important;
+}
+
+.heroText p {
+  font-size: 26px !important;
+  max-width: 850px !important;
+}
+
+.portalCards {
+  max-width: 1480px !important;
+  gap: 36px !important;
+  margin-top: 56px !important;
+}
+
+.portalCard {
+  min-height: 188px !important;
+  padding: 38px !important;
+  border-radius: 28px !important;
+}
+
+.portalCard h3 {
+  font-size: 35px !important;
+}
+
+.portalCard p {
+  font-size: 22px !important;
+}
+
+.circleIcon {
+  width: 96px !important;
+  height: 96px !important;
+  font-size: 46px !important;
+}
+
+.bigFooterInfo {
+  max-width: 1500px !important;
+  padding: 42px 46px !important;
+  grid-template-columns: 1.2fr 1fr 1.1fr !important;
+  border-radius: 28px !important;
+  margin-top: 34px !important;
+  background: rgba(255,255,255,.93) !important;
+}
+
+.footerInfoCard {
+  padding: 8px 18px;
+}
+
+.bigFooterInfo h2 {
+  font-size: 30px !important;
+  margin-top: 0;
+}
+
+.bigFooterInfo p {
+  font-size: 22px !important;
+}
+
+.timePill {
+  font-size: 22px !important;
+  padding: 12px 18px !important;
+  border-radius: 12px !important;
+}
+
+.subPageTop {
+  min-height: 88px;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 22px 42px 8px;
+  flex-wrap: wrap;
+}
+
+.backHomeBtn,
+.subPageLinks button {
+  border: 1px solid #efb46a;
+  background: white;
+  color: #8a0b18;
+  border-radius: 999px;
+  padding: 13px 20px;
+  font-size: 18px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(87,30,0,.07);
+}
+
+.subPageLinks {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+.subPageTop h3 {
+  width: 100%;
+  margin: 8px 0 0;
+  color: #8a0b18;
+  font-size: 22px;
+}
+
+.innerPage {
+  padding-top: 24px !important;
+}
+
+.bigInfoPage,
+.contactInfoPage {
+  width: min(1180px, 100%) !important;
+  padding: 56px !important;
+}
+
+.bigInfoPage h1 {
+  font-size: 54px !important;
+  line-height: 1.08;
+}
+
+.bigInfoPage p,
+.bigInfoPage li {
+  font-size: 24px !important;
+  line-height: 1.7;
+}
+
+.contactGridLarge {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+}
+
+.contactGridLarge > div {
+  background: #fff8ed;
+  border: 1px solid #efb46a;
+  border-radius: 22px;
+  padding: 28px;
+}
+
+.studentPortalTop {
+  padding: 26px 42px !important;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.studentPortalTop h1 {
+  font-size: 38px !important;
+}
+
+.studentPortalTop p {
+  font-size: 20px !important;
+}
+
+.studentTopActions {
+  margin-left: auto;
+  justify-content: flex-end;
+}
+
+.logoutBtn {
+  font-size: 18px !important;
+  padding: 15px 26px !important;
+}
+
+.studentTabs,
+.bigPortalTabs {
+  gap: 16px !important;
+  padding: 20px 34px !important;
+  background: rgba(255,255,255,.96) !important;
+}
+
+.studentTabs button,
+.adminTabs button {
+  font-size: 20px !important;
+  padding: 16px 26px !important;
+  border-radius: 999px !important;
+}
+
+.studentPanel,
+.dashCard,
+.formCard,
+.contentCard,
+.successCard {
+  width: min(1180px,100%) !important;
+  padding: 46px !important;
+  border-radius: 28px !important;
+}
+
+.studentPanel h2,
+.dashCard h2 {
+  font-size: 34px !important;
+}
+
+.studentPanel p,
+.dashCard p,
+.inputGroup span,
+.inputGroup input,
+.inputGroup select {
+  font-size: 20px !important;
+}
+
+.kidHelpText {
+  font-size: 20px !important;
+  line-height: 1.45;
+  background: #fff8ed !important;
+  border: 1px solid #efb46a !important;
+  border-radius: 18px !important;
+  padding: 18px !important;
+}
+
+.approvalDashboard {
+  display: grid;
+  grid-template-columns: .9fr 1.1fr;
+  gap: 24px;
+}
+
+.studentApprovalList {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.studentApprovalRow {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  text-align: left;
+  background: #fff8ed;
+  border: 1px solid #f1d0a5;
+  border-radius: 18px;
+  padding: 18px;
+  cursor: pointer;
+}
+
+.studentApprovalRow b {
+  font-size: 21px;
+  color: #24130f;
+}
+
+.studentApprovalRow p {
+  margin: 6px 0 0;
+}
+
+.selectedApprovalRow {
+  border-color: #8a0b18;
+  box-shadow: 0 0 0 3px rgba(138,11,24,.12);
+}
+
+.needsApproval {
+  white-space: nowrap;
+  color: #991b1b;
+  font-weight: 900;
+}
+
+.redDot {
+  width: 12px;
+  height: 12px;
+  background: #dc2626;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 8px;
+}
+
+.allClear {
+  color: #166534;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.compactApprovalItem {
+  background: #fff8ed;
+  border: 1px solid #f1d0a5;
+  border-radius: 18px;
+  padding: 20px;
+  margin-bottom: 14px;
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+}
+
+.compactReviewed {
+  padding: 14px 18px !important;
+}
+
+.contactBoxPanel {
+  font-size: 22px;
+}
+
+@media (max-width: 1050px) {
+  .approvalDashboard,
+  .contactGridLarge,
+  .bigFooterInfo {
+    grid-template-columns: 1fr !important;
+  }
+
+  .subPageLinks {
+    margin-left: 0;
+  }
+
+  .heroText h1 {
+    font-size: 48px !important;
+  }
+
+  .portalCards {
+    grid-template-columns: 1fr !important;
+  }
+
+  .studentApprovalRow,
+  .compactApprovalItem {
+    display: block;
+  }
+
+  .needsApproval,
+  .allClear {
+    display: inline-block;
+    margin-top: 12px;
+  }
+}
+
+
+/* V15 kid-friendly login + scheduling */
+.friendlyLoginCard p {
+  font-size: 18px;
+  line-height: 1.5;
+}
+
+.scheduleFriendlyPanel h2 {
+  font-size: 34px;
+  margin-bottom: 8px;
+}
+
+.bigHelpText {
+  font-size: 21px;
+  background: #fff8ed;
+  border: 1px solid #efb46a;
+  border-radius: 16px;
+  padding: 16px 18px;
+}
+
+.calendarFriendlyGrid .monthDay {
+  min-height: 72px;
+  font-size: 20px;
+}
+
+.selectedDateTitle {
+  margin: 28px 0 18px;
+}
+
+.selectedDateTitle h2 {
+  margin: 0 0 6px;
+  font-size: 32px;
+  color: #8a0b18;
+}
+
+.selectedDateTitle p {
+  margin: 0;
+  font-size: 18px;
+  color: #6d625e;
+}
+
+.friendlyScheduleGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 22px;
+}
+
+.scheduleGroupCard {
+  background: #fffefa;
+  border: 2px solid #f1d0a5;
+  border-radius: 22px;
+  padding: 24px;
+  box-shadow: 0 10px 22px rgba(87, 30, 0, 0.07);
+}
+
+.scheduleGroupCard h3 {
+  margin: 0 0 6px;
+  color: #8a0b18;
+  font-size: 28px;
+  font-family: Georgia, serif;
+}
+
+.scheduleGroupCard > p {
+  margin: 0 0 18px;
+  color: #6d625e;
+  font-size: 17px;
+}
+
+.slotChoiceGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+.friendlySlot {
+  width: 100%;
+  border: 2px solid #f1d0a5;
+  background: white;
+  border-radius: 18px;
+  padding: 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.friendlySlot:hover {
+  border-color: #e84914;
+  transform: translateY(-1px);
+}
+
+.friendlySlot p {
+  margin: 8px 0;
+  font-size: 17px;
+}
+
+.friendlySlot small {
+  color: #854d0e;
+  font-weight: 900;
+}
+
+.slotTimeText {
+  display: block;
+  color: #24130f;
+  font-size: 24px;
+}
+
+.friendlySlot span {
+  background: #8a0b18;
+  color: white;
+  border-radius: 999px;
+  padding: 10px 16px;
+  font-weight: 900;
+  min-width: 100px;
+  text-align: center;
+}
+
+.friendlySlot.selectedSlot span,
+.friendlySlot.signedSlot span {
+  background: #166534;
+}
+
+.friendlySlot.fullSlot span {
+  background: #6d625e;
+}
+
+.smallEmpty {
+  padding: 18px;
+  font-weight: 800;
+}
+
+.stickySelectionBar {
+  margin-top: 24px;
+}
+
+.stickySelectionBar p {
+  margin: 6px 0 0;
+  color: #6d625e;
+}
+
+@media (max-width: 900px) {
+  .slotChoiceGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .friendlySlot {
+    display: block;
+  }
+
+  .friendlySlot span {
+    display: inline-block;
+    margin-top: 12px;
+  }
+}
+
+
+/* V16 login cleanup */
+.friendlyLoginCard .inputGroup {
+  max-width: 520px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.friendlyLoginCard p {
+  font-size: 18px;
+  line-height: 1.45;
+}
+
+
+/* V18 header spacing + kid-friendly nav polish */
+.header {
+  min-height: 118px;
+  grid-template-columns: 1.35fr 2.15fr auto;
+  padding: 18px 54px;
+  gap: 34px;
+}
+
+.brand {
+  min-width: 360px;
+}
+
+.templeIcon {
+  font-size: 52px;
+}
+
+.brand h2 {
+  font-size: clamp(34px, 2.4vw, 48px);
+  line-height: 1.02;
+  letter-spacing: 1px;
+}
+
+.brand p {
+  font-size: clamp(23px, 1.65vw, 32px);
+  line-height: 1.05;
+}
+
+.nav {
+  justify-content: space-evenly;
+  gap: 14px;
+  width: 100%;
+}
+
+.nav button {
+  font-size: clamp(17px, 1.05vw, 22px);
+  padding: 15px 24px;
+  min-width: 120px;
+  box-shadow: 0 5px 14px rgba(87, 30, 0, 0.05);
+}
+
+.applyTop {
+  font-size: clamp(19px, 1.2vw, 24px);
+  padding: 18px 34px;
+  border-radius: 18px;
+}
+
+@media (max-width: 1250px) {
+  .header {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+
+  .brand {
+    min-width: auto;
+  }
+
+  .nav {
+    flex-wrap: wrap;
+  }
+}
+
+
+/* V19 no-email account confirmation polish */
+.successCard .emailBox h2 {
+  color: #166534;
+}
