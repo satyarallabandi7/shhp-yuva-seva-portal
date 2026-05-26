@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import "./App.css";
 
-const BUILD_MARKER = "SHHP_NO_EMAIL_AUTO_ACCOUNT_V19";
+const BUILD_MARKER = "SHHP_PERSIST_NO_DEMO_SCROLL_FIX_V20";
 const ADMIN_USERNAME = "shhp.admin";
 const ADMIN_PASSWORD = "$winis1971!";
 
@@ -202,6 +202,18 @@ function dateLabel(dateValue) {
   return date.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
 }
 
+function weekdayLabel(dateValue) {
+  const date = new Date(dateValue + "T00:00:00");
+  return date.toLocaleDateString(undefined, { weekday: "long" });
+}
+
+function slotSessionLabel(slot) {
+  const text = `${slot.title} ${slot.category}`.toLowerCase();
+  if (text.includes("morning")) return "Morning";
+  if (text.includes("evening")) return "Evening";
+  return "Special Event";
+}
+
 function makeMonthDays(monthValue) {
   const [year, month] = monthValue.split("-").map(Number);
   const total = new Date(year, month, 0).getDate();
@@ -349,7 +361,7 @@ function printReport(parentEmail, students, hours) {
 }
 
 export default function App() {
-  const [page, setPage] = useState("home");
+  const [page, setPage] = useState(() => load("shhp_current_page_v20", "home"));
   const [students, setStudents] = useState(() => load("shhp_students", demoStudents));
   const [hours, setHours] = useState(() => load("shhp_hours", demoHours));
   const [scheduleSlots, setScheduleSlots] = useState(() => load("shhp_schedule_slots_v11", generateDefaultSchedule()));
@@ -358,9 +370,14 @@ export default function App() {
   const [messages, setMessages] = useState(() => load("shhp_messages", []));
   const [certificateRequests, setCertificateRequests] = useState(() => load("shhp_certificate_requests", []));
   const [emergencyContacts, setEmergencyContacts] = useState(() => load("shhp_emergency_contacts_v12", {}));
-  const [activeStudentId, setActiveStudentId] = useState("");
-  const [parentLogin, setParentLogin] = useState(null);
-  const [adminLoggedIn, setAdminLoggedIn] = useState(false);
+  const [activeStudentId, setActiveStudentId] = useState(() => load("shhp_active_student_id_v20", ""));
+  const [parentLogin, setParentLogin] = useState(() => load("shhp_parent_login_v20", null));
+  const [adminLoggedIn, setAdminLoggedIn] = useState(() => load("shhp_admin_logged_in_v20", false));
+
+  useEffect(() => { save("shhp_current_page_v20", page); }, [page]);
+  useEffect(() => { save("shhp_active_student_id_v20", activeStudentId); }, [activeStudentId]);
+  useEffect(() => { save("shhp_parent_login_v20", parentLogin); }, [parentLogin]);
+  useEffect(() => { save("shhp_admin_logged_in_v20", adminLoggedIn); }, [adminLoggedIn]);
 
   function setStudentsSaved(next) { setStudents(next); save("shhp_students", next); }
   function setHoursSaved(next) { setHours(next); save("shhp_hours", next); }
@@ -394,7 +411,7 @@ export default function App() {
 
   function addSignup(student, slotOrSlots) {
     const slotsToAdd = Array.isArray(slotOrSlots) ? slotOrSlots : [slotOrSlots];
-    const latestSignups = load("shhp_signups", signups);
+    const latestSignups = load("shhp_signups_v11", signups);
     const newSignups = [];
     const newMessages = [];
 
@@ -686,9 +703,48 @@ function StudentShell({ setPage, student, hours, scheduleSlots, signups, allSign
 }
 
 function StudentHome({ student, signups, cancelSignup, setTab }) {
-  const upcoming = [...signups].filter((s) => s.date >= today()).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
-  function handleCancel(id) { if (window.confirm("Cancel this seva slot?")) cancelSignup(student, id); }
-  return <div className="studentPanel"><div className="simpleHomeHeader"><div><h2>Upcoming Seva Slots</h2><p>Cancel only if you cannot attend, so another volunteer can take the slot.</p></div><button className="primaryBtn smallBtn" onClick={() => setTab("schedule")}>Sign Up for More</button></div>{upcoming.length ? upcoming.map((slot) => <div className="upcomingSlot" key={slot.id}><div><b>{slot.title}</b><p>{dateLabel(slot.date)} · {slot.time}</p><small>{slot.category}</small></div><button className="cancelSlotBtn" type="button" onClick={() => handleCancel(slot.id)}>Cancel</button></div>) : <div className="emptyState"><h3>No upcoming seva slots yet</h3><p>Go to Sign Up / Schedule Slots to choose a seva time.</p><button className="primaryBtn smallBtn" onClick={() => setTab("schedule")}>Sign Up Now</button></div>}</div>;
+  const upcoming = [...signups]
+    .filter((s) => s.date >= today())
+    .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+
+  function handleCancel(id) {
+    if (window.confirm("Cancel this seva slot?")) cancelSignup(student, id);
+  }
+
+  return (
+    <div className="studentPanel upcomingHomePanel">
+      <div className="simpleHomeHeader">
+        <div>
+          <h2>Upcoming Volunteer Hours</h2>
+          <p>These are all the future slots you signed up for.</p>
+        </div>
+        <button className="primaryBtn smallBtn" onClick={() => setTab("schedule")}>Sign Up for More</button>
+      </div>
+
+      {upcoming.length ? (
+        <div className="upcomingList">
+          {upcoming.map((slot) => (
+            <div className="upcomingSlot" key={slot.id}>
+              <div>
+                <b>{weekdayLabel(slot.date)} {slotSessionLabel(slot)}</b>
+                <p>{dateLabel(slot.date)} · {slot.time}</p>
+                <small>{slot.title}</small>
+              </div>
+              <button className="cancelSlotBtn" type="button" onClick={() => handleCancel(slot.id)}>
+                Cancel
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="emptyState">
+          <h3>No upcoming volunteer hours yet</h3>
+          <p>Go to Sign Up / Schedule Slots to choose a seva time.</p>
+          <button className="primaryBtn smallBtn" onClick={() => setTab("schedule")}>Sign Up Now</button>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function StudentSchedule({ student, scheduleSlots, signups, allSignups, addSignup, setTab }) {
@@ -706,7 +762,12 @@ function StudentSchedule({ student, scheduleSlots, signups, allSignups, addSignu
   function hasSignup(date) { return signups.some((s) => s.date === date); }
   function filledCount(slotId) { return allSignups.filter((s) => s.slotId === slotId).length; }
   function isFull(slot) { return filledCount(slot.id) >= slotLimit(slot); }
-  function toggle(id) { setConfirmed(false); setSelectedIds(selectedIds.includes(id) ? selectedIds.filter(x => x !== id) : [...selectedIds, id]); }
+  function toggle(id) {
+    const currentScroll = window.scrollY;
+    setConfirmed(false);
+    setSelectedIds((current) => current.includes(id) ? current.filter((x) => x !== id) : [...current, id]);
+    requestAnimationFrame(() => window.scrollTo(0, currentScroll));
+  }
   function submitSelected() {
     if (!selectedIds.length) return alert("Please select at least one slot.");
 
@@ -903,7 +964,6 @@ function StudentLogin({ students, setActiveStudentId }) {
       <InputText label="First and Last Name" value={fullName} setValue={setFullName} />
       {error && <p className="errorText">{error}</p>}
       <button className="primaryBtn">Log In</button>
-      <p className="smallMuted">Demo: 1002123456 / Aarav Rana</p>
     </form>
   );
 }
@@ -1164,7 +1224,7 @@ function ParentPDF({ parentEmail, students, hours }) {
 function ParentLogin({ students, setParentLogin }) {
   const [email, setEmail] = useState(""); const [id, setId] = useState(""); const [error, setError] = useState("");
   function login(e) { e.preventDefault(); const match = students.find((s) => clean(s.parentEmail) === clean(email) && s.id === id.trim()); if (!match) return setError("No student found with that parent email and student ID."); setParentLogin({ parentEmail: clean(email), studentId: id.trim() }); }
-  return <form className="loginCard" onSubmit={login}><h1>Parent Login</h1><p>Enter parent email and student ID.</p><InputText label="Parent Email" value={email} setValue={setEmail} /><InputText label="Student ID" value={id} setValue={setId} />{error && <p className="errorText">{error}</p>}<button className="primaryBtn">View Hours</button><p className="smallMuted">Demo: parent@example.com / 1002123456</p></form>;
+  return <form className="loginCard" onSubmit={login}><h1>Parent Login</h1><p>Enter parent email and student ID.</p><InputText label="Parent Email" value={email} setValue={setEmail} /><InputText label="Student ID" value={id} setValue={setId} />{error && <p className="errorText">{error}</p>}<button className="primaryBtn">View Hours</button></form>;
 }
 
 function AdminLoginMini({ setPage, setAdminLoggedIn }) {
