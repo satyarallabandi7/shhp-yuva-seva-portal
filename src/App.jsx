@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import "./App.css";
 
-const BUILD_MARKER = "SHHP_PORTAL_BUTTON_FIX_V22";
+const BUILD_MARKER = "SHHP_ACTIVE_NAV_UI_SCALE_V23";
 const ADMIN_USERNAME = "shhp.admin";
 const ADMIN_PASSWORD = "$winis1971!";
 
@@ -549,7 +549,16 @@ export default function App() {
   </div>;
 }
 
-function Header({ setPage }) {
+function Header({ setPage, activePage = "home" }) {
+  const navItems = [
+    ["home", "Home"],
+    ["about", "About Us"],
+    ["why", "Why Join?"],
+    ["tier", "Tier System"],
+    ["contact", "Contact Us"],
+    ["admin", "Admin"],
+  ];
+
   return (
     <header className="header">
       <button className="brand" onClick={() => setPage("home")}>
@@ -557,12 +566,11 @@ function Header({ setPage }) {
         <div><h2>{templeInfo.name}</h2><p>Volunteer Program</p></div>
       </button>
       <nav className="nav">
-        <button onClick={() => setPage("home")}>Home</button>
-        <button onClick={() => setPage("about")}>About Us</button>
-        <button onClick={() => setPage("why")}>Why Join?</button>
-        <button onClick={() => setPage("tier")}>Tier System</button>
-        <button onClick={() => setPage("contact")}>Contact Us</button>
-        <button onClick={() => setPage("admin")}>Admin</button>
+        {navItems.map(([key, label]) => (
+          <button key={key} className={activePage === key ? "activeNavButton" : ""} onClick={() => setPage(key)}>
+            {label}
+          </button>
+        ))}
       </nav>
       <button className="applyTop" onClick={() => setPage("apply")}>Apply Now</button>
     </header>
@@ -572,7 +580,7 @@ function Header({ setPage }) {
 function Home({ setPage }) {
   return (
     <>
-      <Header setPage={setPage} />
+      <Header setPage={setPage} activePage="home" />
       <main className="home">
         <section className="heroNoImage">
           <div className="heroContent">
@@ -602,6 +610,11 @@ function Home({ setPage }) {
                 <div><h3>Parent Portal</h3><p>View hours and parent reports</p></div>
                 <b>›</b>
               </button>
+            </div>
+
+            <div className="homeNotice">
+              <b>Important Notice</b>
+              <p>Volunteers should be at least 12 years old or currently in middle school. Please arrive on time for your selected slot and check in with the volunteer coordinator when you arrive.</p>
             </div>
 
             <div className="whyMiniGrid">
@@ -686,12 +699,17 @@ function Apply({ setPage, addStudent }) {
     </SimplePage>
   );
 
-  return <SimplePage title="Volunteer Application" setPage={setPage}>{ageWarning && <div className="modalOverlay"><div className="modalCard"><h2>Volunteer Eligibility Notice</h2><p>For safety and supervision, volunteers should be at least 12 years old or currently in middle school.</p><button className="primaryBtn" type="button" onClick={() => setAgeWarning(false)}>Okay, I Understand</button></div></div>}<form className="formCard" onSubmit={submit}><h1>Volunteer Application</h1><div className="formGrid"><Input name="firstName" label="First Name" required /><Input name="lastName" label="Last Name" required /><Input name="age" label="Age" required /><Input name="grade" label="Grade" required /><Input name="city" label="City" required /><Input name="parentName" label="Parent/Guardian Name" required /><Input name="parentEmail" label="Parent Email" required type="email" /><Input name="parentPhone" label="Parent Phone Number" required /></div><Input name="studentEmail" label="Student Email" /><div className="interestBox"><h3>Areas of Interest</h3><div className="interestGrid">{interestOptions.map((interest) => <label key={interest} className="interestOption"><input type="checkbox" name="interests" value={interest} />{interest}</label>)}</div></div><div className="consentBox"><label><input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} /> Parent/guardian gives permission for this student to volunteer.</label></div><button className="primaryBtn">Submit Application</button></form></SimplePage>;
+  return <SimplePage title="Volunteer Application" setPage={setPage}>{ageWarning && <div className="modalOverlay"><div className="modalCard"><h2>Volunteer Eligibility Notice</h2><p>For safety and supervision, volunteers should be at least 12 years old or currently in middle school.</p><button className="primaryBtn" type="button" onClick={() => setAgeWarning(false)}>Okay, I Understand</button></div></div>}<form className="formCard" onSubmit={submit}><h1>Volunteer Application</h1><div className="formGrid"><Input name="firstName" label="First Name" required /><Input name="lastName" label="Last Name" required /><Input name="age" label="Age" required /><Input name="grade" label="Grade" required /><Input name="city" label="City" required /><Input name="parentName" label="Parent/Guardian Name" required /><Input name="parentEmail" label="Parent Email" required type="email" /><Input name="parentPhone" label="Parent Phone Number" required /></div><Input name="studentEmail" label="Student Email" /><div className="interestBox"><h3>Areas of Interest</h3><div className="interestGrid">{interestOptions.map((interest) => <label key={interest} className="interestOption"><input type="checkbox" name="interests" value={interest} />{interest}</label>)}</div></div><div className="consentBox">
+    <label className="consentLabel">
+      <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
+      <span>I confirm that a parent/guardian gives permission for this student to participate in the Sri HariHara Peetham Volunteer Program. I understand volunteers should be at least 12 years old or currently in middle school, and students must follow temple rules, safety instructions, and volunteer coordinator guidance.</span>
+    </label>
+  </div><button className="primaryBtn">Submit Application</button></form></SimplePage>;
 }
 
 function StudentPortal({ setPage, students, hours, scheduleSlots, signups, signIns, messages, activeStudentId, setActiveStudentId, addSignup, cancelSignup, addHours, addSignIn, addCertificateRequest, setAdminLoggedIn }) {
   const student = students.find((s) => s.id === activeStudentId);
-  if (!student) return <SimplePage title="Student Portal Login" setPage={setPage}><StudentLogin students={students} setActiveStudentId={setActiveStudentId} /></SimplePage>;
+  if (!student) return <SimplePage title="Student Portal Login" setPage={setPage}><StudentLogin students={students} setActiveStudentId={setActiveStudentId} setPage={setPage} /></SimplePage>;
   return <StudentShell setPage={setPage} student={student} hours={hours} scheduleSlots={scheduleSlots} signups={signups.filter(s => s.studentId === student.id)} allSignups={signups} signIns={signIns.filter(s => s.studentId === student.id)} messages={messages.filter(m => m.studentId === student.id)} addSignup={addSignup} cancelSignup={cancelSignup} addHours={addHours} addSignIn={addSignIn} addCertificateRequest={addCertificateRequest} logout={() => setActiveStudentId("")} />;
 }
 
@@ -752,6 +770,7 @@ function StudentSchedule({ student, scheduleSlots, signups, allSignups, addSignu
   const [selectedDate, setSelectedDate] = useState(today().startsWith(month) ? today() : `${month}-01`);
   const [selectedIds, setSelectedIds] = useState([]);
   const [confirmed, setConfirmed] = useState(false);
+  const [lastSignedSlots, setLastSignedSlots] = useState([]);
   const days = makeMonthDays(month);
   const dateSlots = scheduleSlots.filter((slot) => slot.date === selectedDate && slot.active).sort((a, b) => a.start.localeCompare(b.start));
   const morningSlots = dateSlots.filter((slot) => slot.category === "Regular Morning");
@@ -778,12 +797,11 @@ function StudentSchedule({ student, scheduleSlots, signups, allSignups, addSignu
     const savedCount = addSignup(student, selectedSlots);
 
     setSelectedIds([]);
+    setLastSignedSlots(selectedSlots.slice(0, savedCount));
     setConfirmed(savedCount > 0);
 
     if (savedCount === 0) {
       alert("Those slots were already signed up or are full.");
-    } else {
-      alert(`${savedCount} slot${savedCount === 1 ? "" : "s"} signed up successfully.`);
     }
   }
 
@@ -846,7 +864,17 @@ function StudentSchedule({ student, scheduleSlots, signups, allSignups, addSignu
       </div>
 
       <div className="selectionBar stickySelectionBar"><div><b>Selected Slots: {selectedIds.length}</b><p>After you submit, your slots will appear on the Home tab.</p></div><button className="primaryBtn" onClick={submitSelected}>Submit Selected Slots</button></div>
-      {confirmed && <div className="successNotice"><span>Your selected slots were signed up successfully. View them on Home.</span><button onClick={() => setTab("home")}>Go to Home</button></div>}
+      {confirmed && <div className="successNotice successNoticeBlock">
+        <div>
+          <b>You signed up for {lastSignedSlots.length} slot{lastSignedSlots.length === 1 ? "" : "s"}:</b>
+          <ul>
+            {lastSignedSlots.map((slot) => (
+              <li key={slot.id}>{dateLabel(slot.date)} · {formatTimeRange(slot)} · {slot.title}</li>
+            ))}
+          </ul>
+        </div>
+        <button onClick={() => setTab("home")}>Go to Home</button>
+      </div>}
     </div>
   );
 }
@@ -884,6 +912,15 @@ function StudentSignIn({ student, signups, signIns, addSignIn }) {
     <div className="studentPanel">
       <h2>Sign In at the Temple</h2>
       <p className="kidHelpText">When you arrive, ask the front desk for the 4-digit code. After you sign in, your matching slot will be submitted for hours approval automatically.</p>
+      <div className="arrivalSteps">
+        <b>What to do when you arrive</b>
+        <ol>
+          <li>Arrive at the temple for your selected slot.</li>
+          <li>Ask the coordinator or front desk for today’s 4-digit code.</li>
+          <li>Enter the code here and choose Morning or Evening.</li>
+          <li>Your hours will be sent for approval automatically.</li>
+        </ol>
+      </div>
 
       <div className="note">
         <b>Today's Signed-Up Slots</b>
@@ -919,7 +956,7 @@ function StudentSignIn({ student, signups, signIns, addSignIn }) {
   );
 }
 
-function StudentLogin({ students, setActiveStudentId }) {
+function StudentLogin({ students, setActiveStudentId, setPage }) {
   const [id, setId] = useState("");
   const [fullName, setFullName] = useState("");
   const [error, setError] = useState("");
@@ -964,6 +1001,9 @@ function StudentLogin({ students, setActiveStudentId }) {
       <InputText label="First and Last Name" value={fullName} setValue={setFullName} />
       {error && <p className="errorText">{error}</p>}
       <button className="primaryBtn">Log In</button>
+      <p className="loginHelpLink">
+        Don’t have an account yet? <button type="button" onClick={() => setPage("apply")}>Create one here.</button>
+      </p>
     </form>
   );
 }
@@ -1224,7 +1264,16 @@ function ParentPDF({ parentEmail, students, hours }) {
 function ParentLogin({ students, setParentLogin }) {
   const [email, setEmail] = useState(""); const [id, setId] = useState(""); const [error, setError] = useState("");
   function login(e) { e.preventDefault(); const match = students.find((s) => clean(s.parentEmail) === clean(email) && s.id === id.trim()); if (!match) return setError("No student found with that parent email and student ID."); setParentLogin({ parentEmail: clean(email), studentId: id.trim() }); }
-  return <form className="loginCard" onSubmit={login}><h1>Parent Login</h1><p>Enter parent email and student ID.</p><InputText label="Parent Email" value={email} setValue={setEmail} /><InputText label="Student ID" value={id} setValue={setId} />{error && <p className="errorText">{error}</p>}<button className="primaryBtn">View Hours</button></form>;
+  return (
+    <form className="loginCard" onSubmit={login}>
+      <h1>Parent Login</h1>
+      <p>Each student receives a unique Student ID after applying. Parents can use their parent email and the student’s ID number to view hours, tiers, emergency notes, and parent reports.</p>
+      <InputText label="Parent Email" value={email} setValue={setEmail} />
+      <InputText label="Student ID" value={id} setValue={setId} />
+      {error && <p className="errorText">{error}</p>}
+      <button className="primaryBtn">View Student Info</button>
+    </form>
+  );
 }
 
 function AdminLoginMini({ setPage, setAdminLoggedIn }) {
@@ -1461,7 +1510,7 @@ function HeaderBlock({ title, subtitle }) { return <div className="dashboardHead
 function Stat({ title, value, caption }) { return <div className="statCard"><p>{title}</p><h2>{value}</h2><small>{caption}</small></div>; }
 function AboutPage({ setPage }) {
   return (
-    <SimplePage title="About Us" setPage={setPage}>
+    <SimplePage title="About Us" setPage={setPage} activePage="about">
       <div className="contentCard styledInner bigInfoPage">
         <h1>About Sri HariHara Peetham</h1>
         <p>Sri HariHara Peetham is a local Hindu temple and nonprofit community space serving families in Coppell and the surrounding area.</p>
@@ -1474,7 +1523,7 @@ function AboutPage({ setPage }) {
 
 function WhyJoinPage({ setPage }) {
   return (
-    <SimplePage title="Why Join?" setPage={setPage}>
+    <SimplePage title="Why Join?" setPage={setPage} activePage="why">
       <div className="contentCard styledInner whyJoinPage">
         <h1>Why Join the Volunteer Program?</h1>
         <p>Seva is a simple way to help the temple, meet good people, and grow as a kind, confident leader.</p>
@@ -1509,10 +1558,10 @@ function WhyJoinPage({ setPage }) {
 }
 
 function HowPage({ setPage }) { return <SimplePage title="How It Works" setPage={setPage}><div className="contentCard styledInner"><h1>How the Volunteer Portal Works</h1><div className="steps"><div className="step"><h3>1. Apply</h3><p>Students apply and receive a Student ID immediately. No student password is needed.</p></div><div className="step"><h3>2. Schedule</h3><p>Students pick seva slots from the monthly calendar.</p></div><div className="step"><h3>3. Sign In</h3><p>Students enter the daily admin code when they arrive.</p></div><div className="step"><h3>4. Submit Hours</h3><p>After seva, students submit hours for admin approval.</p></div></div></div></SimplePage>; }
-function TierPage({ setPage }) { return <SimplePage title="Tier System" setPage={setPage}><div className="contentCard styledInner"><h1>Seva Tier System</h1><div className="tierGrid">{tierLevels.map((tier) => <div className="tierCard" key={tier.name}><h3>{tier.name}</h3><p>{tier.min}+ approved hours</p></div>)}</div></div></SimplePage>; }
+function TierPage({ setPage }) { return <SimplePage title="Tier System" setPage={setPage} activePage="tier"><div className="contentCard styledInner"><h1>Seva Tier System</h1><div className="tierGrid">{tierLevels.map((tier) => <div className="tierCard" key={tier.name}><h3>{tier.name}</h3><p>{tier.min}+ approved hours</p></div>)}</div></div></SimplePage>; }
 function ContactPage({ setPage }) {
   return (
-    <SimplePage title="Contact Us" setPage={setPage}>
+    <SimplePage title="Contact Us" setPage={setPage} activePage="contact">
       <div className="contentCard styledInner bigInfoPage contactInfoPage">
         <h1>Contact Sri HariHara Peetham</h1>
         <div className="contactGridLarge">
@@ -1535,16 +1584,24 @@ function ContactPage({ setPage }) {
   );
 }
 
-function SimplePage({ title, setPage, children }) {
+function SimplePage({ title, setPage, activePage = "", children }) {
+  const links = [
+    ["about", "About Us"],
+    ["why", "Why Join?"],
+    ["tier", "Tier System"],
+    ["contact", "Contact Us"],
+  ];
+
   return (
     <>
       <div className="subPageTop">
         <button className="backHomeBtn" type="button" onClick={() => setPage("home")}>← Back to Home</button>
         <div className="subPageLinks">
-          <button type="button" onClick={() => setPage("about")}>About Us</button>
-          <button type="button" onClick={() => setPage("why")}>Why Join?</button>
-          <button type="button" onClick={() => setPage("tier")}>Tier System</button>
-          <button type="button" onClick={() => setPage("contact")}>Contact Us</button>
+          {links.map(([key, label]) => (
+            <button key={key} className={activePage === key ? "activeSubPageLink" : ""} type="button" onClick={() => setPage(key)}>
+              {label}
+            </button>
+          ))}
         </div>
         <h3>{title}</h3>
       </div>

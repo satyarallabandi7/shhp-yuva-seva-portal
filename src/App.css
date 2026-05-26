@@ -937,3 +937,207 @@ body {
     margin-top: 14px;
   }
 }
+
+
+/* V23 active navigation + better page scale */
+.header {
+  min-height: 92px;
+  padding: 12px 38px;
+  grid-template-columns: 1.05fr 1.8fr auto;
+  gap: 22px;
+}
+
+.brand {
+  min-width: 300px;
+}
+
+.templeIcon {
+  font-size: 40px;
+}
+
+.brand h2 {
+  font-size: clamp(27px, 2vw, 38px);
+  line-height: 1.03;
+}
+
+.brand p {
+  font-size: clamp(19px, 1.35vw, 27px);
+}
+
+.nav {
+  gap: 10px;
+}
+
+.nav button {
+  font-size: clamp(15px, .95vw, 18px);
+  padding: 12px 18px;
+  min-width: auto;
+}
+
+.nav .activeNavButton,
+.subPageLinks .activeSubPageLink {
+  background: linear-gradient(135deg, #fff0d9, #ffffff);
+  border-color: #b0091b;
+  color: #8a0b18;
+  box-shadow: 0 0 0 2px rgba(176, 9, 27, 0.12);
+}
+
+.applyTop {
+  font-size: clamp(17px, 1.05vw, 20px);
+  padding: 15px 28px;
+  border-radius: 15px;
+}
+
+.heroNoImage {
+  padding-top: 42px;
+}
+
+.heroText h1 {
+  font-size: clamp(42px, 4.2vw, 66px);
+}
+
+.heroText h3 {
+  font-size: clamp(27px, 2.6vw, 40px);
+}
+
+.heroText p {
+  font-size: 20px;
+}
+
+.portalCards {
+  gap: 22px;
+  max-width: 1180px;
+}
+
+.portalCard {
+  min-height: 122px;
+  padding: 22px 24px;
+}
+
+.portalCard h3 {
+  font-size: 24px;
+}
+
+.portalCard p {
+  font-size: 17px;
+}
+
+.circleIcon {
+  width: 64px;
+  height: 64px;
+  font-size: 28px;
+}
+
+.homeNotice {
+  max-width: 1180px;
+  margin: 20px auto 20px;
+  border: 1px solid #efc287;
+  background: #fff8ed;
+  border-radius: 18px;
+  padding: 18px 22px;
+  text-align: center;
+  box-shadow: 0 8px 18px rgba(87, 30, 0, .06);
+}
+
+.homeNotice b {
+  color: #8a0b18;
+  font-size: 21px;
+}
+
+.homeNotice p {
+  margin: 8px auto 0;
+  max-width: 880px;
+  font-size: 18px;
+  line-height: 1.45;
+}
+
+.loginHelpLink {
+  margin-top: 20px;
+  font-size: 18px;
+}
+
+.loginHelpLink button {
+  border: none;
+  background: transparent;
+  color: #8a0b18;
+  font-weight: 900;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: inherit;
+}
+
+.consentLabel {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.consentLabel input {
+  margin-top: 5px;
+  transform: scale(1.2);
+}
+
+.arrivalSteps {
+  background: #fff8ed;
+  border: 1px solid #efc287;
+  border-radius: 16px;
+  padding: 18px 22px;
+  margin: 18px 0;
+}
+
+.arrivalSteps b {
+  color: #8a0b18;
+  font-size: 20px;
+}
+
+.arrivalSteps ol {
+  margin: 12px 0 0;
+  padding-left: 22px;
+}
+
+.arrivalSteps li {
+  margin: 8px 0;
+  font-size: 17px;
+}
+
+.successNoticeBlock {
+  align-items: flex-start;
+}
+
+.successNoticeBlock ul {
+  margin: 10px 0 0;
+  padding-left: 18px;
+}
+
+.successNoticeBlock li {
+  margin: 5px 0;
+}
+
+@media (max-width: 1250px) {
+  .header {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    padding: 14px 22px;
+  }
+
+  .brand {
+    min-width: auto;
+  }
+}
+
+@media (max-width: 900px) {
+  .heroText h1 {
+    font-size: 40px;
+  }
+
+  .nav button {
+    font-size: 15px;
+    padding: 10px 14px;
+  }
+
+  .applyTop {
+    width: auto;
+  }
+}
