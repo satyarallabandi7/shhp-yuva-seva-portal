@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import "./App.css";
 
-const BUILD_MARKER = "SHHP_PERSIST_NO_DEMO_SCROLL_FIX_V20";
+const BUILD_MARKER = "SHHP_NO_USEEFFECT_PRODUCTION_FIX_V21";
 const ADMIN_USERNAME = "shhp.admin";
 const ADMIN_PASSWORD = "$winis1971!";
 
@@ -374,10 +374,10 @@ export default function App() {
   const [parentLogin, setParentLogin] = useState(() => load("shhp_parent_login_v20", null));
   const [adminLoggedIn, setAdminLoggedIn] = useState(() => load("shhp_admin_logged_in_v20", false));
 
-  useEffect(() => { save("shhp_current_page_v20", page); }, [page]);
-  useEffect(() => { save("shhp_active_student_id_v20", activeStudentId); }, [activeStudentId]);
-  useEffect(() => { save("shhp_parent_login_v20", parentLogin); }, [parentLogin]);
-  useEffect(() => { save("shhp_admin_logged_in_v20", adminLoggedIn); }, [adminLoggedIn]);
+  function setPageSaved(next) { setPage(next); save("shhp_current_page_v20", next); }
+  function setActiveStudentIdSaved(next) { setActiveStudentId(next); save("shhp_active_student_id_v20", next); }
+  function setParentLoginSaved(next) { setParentLogin(next); save("shhp_parent_login_v20", next); }
+  function setAdminLoggedInSaved(next) { setAdminLoggedIn(next); save("shhp_admin_logged_in_v20", next); }
 
   function setStudentsSaved(next) { setStudents(next); save("shhp_students", next); }
   function setHoursSaved(next) { setHours(next); save("shhp_hours", next); }
@@ -537,15 +537,15 @@ export default function App() {
   }
 
   return <div className="app" data-build={BUILD_MARKER}>
-    {page === "home" && <Home setPage={setPage} />}
-    {page === "apply" && <Apply setPage={setPage} addStudent={addStudent} />}
-    {page === "student" && <StudentPortal setPage={setPage} students={students} hours={hours} scheduleSlots={scheduleSlots} signups={signups} signIns={signIns} messages={messages} activeStudentId={activeStudentId} setActiveStudentId={setActiveStudentId} addSignup={addSignup} cancelSignup={cancelSignup} addHours={addHours} addSignIn={addSignIn} addCertificateRequest={addCertificateRequest} setAdminLoggedIn={setAdminLoggedIn} />}
-    {page === "parent" && <ParentPortal setPage={setPage} students={students} hours={hours} scheduleSlots={scheduleSlots} signups={signups} messages={messages} parentLogin={parentLogin} setParentLogin={setParentLogin} addSignup={addSignup} cancelSignup={cancelSignup} emergencyContacts={emergencyContacts} setEmergencySaved={setEmergencySaved} setAdminLoggedIn={setAdminLoggedIn} />}
-    {page === "admin" && <AdminPortal setPage={setPage} adminLoggedIn={adminLoggedIn} setAdminLoggedIn={setAdminLoggedIn} students={students} hours={hours} setHoursSaved={setHoursSaved} scheduleSlots={scheduleSlots} setScheduleSaved={setScheduleSaved} signups={signups} signIns={signIns} emails={emails} messages={messages} certificateRequests={certificateRequests} setCertificatesSaved={setCertificatesSaved} emergencyContacts={emergencyContacts} />}
-    {page === "about" && <AboutPage setPage={setPage} />}
-    {page === "why" && <WhyJoinPage setPage={setPage} />}
-    {page === "tier" && <TierPage setPage={setPage} />}
-    {page === "contact" && <ContactPage setPage={setPage} />}
+    {page === "home" && <Home setPage={setPageSaved} />}
+    {page === "apply" && <Apply setPage={setPageSaved} addStudent={addStudent} />}
+    {page === "student" && <StudentPortal setPage={setPageSaved} students={students} hours={hours} scheduleSlots={scheduleSlots} signups={signups} signIns={signIns} messages={messages} activeStudentId={activeStudentId} setActiveStudentId={setActiveStudentIdSaved} addSignup={addSignup} cancelSignup={cancelSignup} addHours={addHours} addSignIn={addSignIn} addCertificateRequest={addCertificateRequest} setAdminLoggedIn={setAdminLoggedInSaved} />}
+    {page === "parent" && <ParentPortal setPage={setPageSaved} students={students} hours={hours} scheduleSlots={scheduleSlots} signups={signups} messages={messages} parentLogin={parentLogin} setParentLogin={setParentLoginSaved} addSignup={addSignup} cancelSignup={cancelSignup} emergencyContacts={emergencyContacts} setEmergencySaved={setEmergencySaved} setAdminLoggedIn={setAdminLoggedInSaved} />}
+    {page === "admin" && <AdminPortal setPage={setPageSaved} adminLoggedIn={adminLoggedIn} setAdminLoggedIn={setAdminLoggedInSaved} students={students} hours={hours} setHoursSaved={setHoursSaved} scheduleSlots={scheduleSlots} setScheduleSaved={setScheduleSaved} signups={signups} signIns={signIns} emails={emails} messages={messages} certificateRequests={certificateRequests} setCertificatesSaved={setCertificatesSaved} emergencyContacts={emergencyContacts} />}
+    {page === "about" && <AboutPage setPage={setPageSaved} />}
+    {page === "why" && <WhyJoinPage setPage={setPageSaved} />}
+    {page === "tier" && <TierPage setPage={setPageSaved} />}
+    {page === "contact" && <ContactPage setPage={setPageSaved} />}
   </div>;
 }
 
@@ -691,7 +691,7 @@ function Apply({ setPage, addStudent }) {
 
 function StudentPortal({ setPage, students, hours, scheduleSlots, signups, signIns, messages, activeStudentId, setActiveStudentId, addSignup, cancelSignup, addHours, addSignIn, addCertificateRequest, setAdminLoggedIn }) {
   const student = students.find((s) => s.id === activeStudentId);
-  if (!student) return <SimplePage title="Student Portal Login" setPage={setPage}><StudentLogin students={students} setActiveStudentId={setActiveStudentId} /></SimplePage>;
+  if (!student) return <SimplePage title="Student Portal Login" setPage={setPage}><StudentLogin students={students} setActiveStudentId={setActiveStudentIdSaved} /></SimplePage>;
   return <StudentShell setPage={setPage} student={student} hours={hours} scheduleSlots={scheduleSlots} signups={signups.filter(s => s.studentId === student.id)} allSignups={signups} signIns={signIns.filter(s => s.studentId === student.id)} messages={messages.filter(m => m.studentId === student.id)} addSignup={addSignup} cancelSignup={cancelSignup} addHours={addHours} addSignIn={addSignIn} addCertificateRequest={addCertificateRequest} logout={() => setActiveStudentId("")} />;
 }
 
@@ -972,7 +972,7 @@ function ParentPortal({ setPage, students, hours, scheduleSlots, signups, messag
   if (!parentLogin) {
     return (
       <SimplePage title="Parent Portal Login" setPage={setPage}>
-        <ParentLogin students={students} setParentLogin={setParentLogin} />
+        <ParentLogin students={students} setParentLogin={setParentLoginSaved} />
       </SimplePage>
     );
   }
@@ -1241,7 +1241,7 @@ function AdminPortal({ setPage, adminLoggedIn, setAdminLoggedIn, students, hours
   if (!adminLoggedIn) {
     return (
       <SimplePage title="Admin Login" setPage={setPage}>
-        <AdminLoginMini setPage={setPage} setAdminLoggedIn={setAdminLoggedIn} />
+        <AdminLoginMini setPage={setPage} setAdminLoggedIn={setAdminLoggedInSaved} />
       </SimplePage>
     );
   }
