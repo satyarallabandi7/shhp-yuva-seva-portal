@@ -1141,3 +1141,578 @@ body {
     width: auto;
   }
 }
+
+
+/* V25 serious mobile repair: no sticky overlay, no oversized phone layout */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root,
+.app {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+img,
+svg,
+video {
+  max-width: 100%;
+}
+
+@media (max-width: 820px) {
+  body {
+    font-size: 15px;
+  }
+
+  .header {
+    position: static !important;
+    top: auto !important;
+    z-index: auto !important;
+    display: block !important;
+    width: 100% !important;
+    min-height: 0 !important;
+    padding: 14px 14px 18px !important;
+    background: #ffffff !important;
+    border-bottom: 2px solid #f2bc75 !important;
+    box-shadow: none !important;
+  }
+
+  .brand {
+    width: 100% !important;
+    min-width: 0 !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    text-align: left !important;
+  }
+
+  .templeIcon {
+    font-size: 30px !important;
+    flex: 0 0 auto !important;
+  }
+
+  .brand h2 {
+    font-size: 25px !important;
+    line-height: 1.02 !important;
+    letter-spacing: 1px !important;
+    max-width: 260px !important;
+  }
+
+  .brand p {
+    font-size: 17px !important;
+    line-height: 1.1 !important;
+  }
+
+  .nav {
+    width: 100% !important;
+    max-width: 360px !important;
+    margin: 14px auto 0 !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    justify-content: stretch !important;
+  }
+
+  .nav button {
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 10px 8px !important;
+    font-size: 14px !important;
+    line-height: 1.15 !important;
+    white-space: normal !important;
+    border-radius: 999px !important;
+  }
+
+  .applyTop {
+    width: min(100%, 320px) !important;
+    display: block !important;
+    margin: 14px auto 0 !important;
+    padding: 13px 18px !important;
+    font-size: 16px !important;
+    border-radius: 14px !important;
+  }
+
+  .heroNoImage {
+    min-height: 0 !important;
+    padding: 22px 14px 26px !important;
+  }
+
+  .heroText {
+    margin-bottom: 18px !important;
+  }
+
+  .heroKicker {
+    font-size: 13px !important;
+    padding: 10px 14px !important;
+    border-radius: 999px !important;
+    max-width: 330px !important;
+    margin: 0 auto 18px !important;
+  }
+
+  .heroText h1 {
+    font-size: 34px !important;
+    line-height: 1.05 !important;
+    letter-spacing: 0 !important;
+  }
+
+  .heroText h3 {
+    font-size: 22px !important;
+    line-height: 1.15 !important;
+  }
+
+  .heroText p {
+    font-size: 16px !important;
+    line-height: 1.45 !important;
+    max-width: 340px !important;
+  }
+
+  .lotusDivider {
+    margin: 14px 0 10px !important;
+    font-size: 22px !important;
+    gap: 10px !important;
+  }
+
+  .lotusDivider span {
+    width: 48px !important;
+  }
+
+  .portalCards {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+    margin: 20px auto 18px !important;
+    max-width: 360px !important;
+  }
+
+  .portalCard {
+    min-height: 0 !important;
+    width: 100% !important;
+    padding: 16px !important;
+    border-radius: 16px !important;
+    display: grid !important;
+    grid-template-columns: 48px 1fr !important;
+    gap: 12px !important;
+    align-items: center !important;
+  }
+
+  .portalCard b {
+    display: none !important;
+  }
+
+  .portalCard h3 {
+    font-size: 20px !important;
+    line-height: 1.15 !important;
+    margin-bottom: 4px !important;
+  }
+
+  .portalCard p {
+    font-size: 14px !important;
+    line-height: 1.25 !important;
+  }
+
+  .circleIcon {
+    width: 48px !important;
+    height: 48px !important;
+    font-size: 22px !important;
+  }
+
+  .homeNotice,
+  .whyMiniGrid,
+  .infoFooter {
+    max-width: 360px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  .homeNotice {
+    padding: 14px !important;
+    border-radius: 16px !important;
+  }
+
+  .homeNotice b {
+    font-size: 17px !important;
+  }
+
+  .homeNotice p {
+    font-size: 14px !important;
+  }
+
+  .whyMiniGrid,
+  .infoFooter,
+  .formGrid,
+  .statsGrid,
+  .adminStats,
+  .credentialGrid,
+  .tierGrid,
+  .interestGrid,
+  .contactGridLarge,
+  .whyJoinGrid,
+  .slotChoiceGrid,
+  .friendlyScheduleGrid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .whyMiniGrid {
+    gap: 12px !important;
+    margin-top: 18px !important;
+  }
+
+  .whyMiniGrid > div,
+  .infoFooter,
+  .footerInfoCard,
+  .contentCard,
+  .formCard,
+  .successCard,
+  .dashCard,
+  .loginCard,
+  .studentPanel,
+  .parentKidCard,
+  .scheduleGroupCard {
+    width: 100% !important;
+    max-width: 360px !important;
+    padding: 18px !important;
+    border-radius: 16px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  .infoFooter {
+    padding: 18px !important;
+    gap: 14px !important;
+  }
+
+  .infoFooter h2,
+  .footerQuote h2,
+  .parentKidHeader h3,
+  .scheduleGroupCard h3 {
+    font-size: 23px !important;
+    line-height: 1.18 !important;
+  }
+
+  .infoFooter p,
+  .footerQuote p,
+  .whyMiniGrid p,
+  .contentCard p,
+  .formCard p,
+  .loginCard p,
+  .studentPanel p {
+    font-size: 15px !important;
+    line-height: 1.45 !important;
+  }
+
+  .timePill {
+    font-size: 15px !important;
+    padding: 10px 12px !important;
+  }
+
+  .om {
+    width: 64px !important;
+    height: 64px !important;
+    font-size: 36px !important;
+  }
+
+  .topBar,
+  .studentPortalTop {
+    display: block !important;
+    padding: 16px !important;
+    text-align: center !important;
+  }
+
+  .topBar h3,
+  .studentPortalTop h1 {
+    margin: 10px 0 0 !important;
+    font-size: 22px !important;
+    line-height: 1.15 !important;
+  }
+
+  .studentPortalTop p {
+    font-size: 14px !important;
+  }
+
+  .studentTopActions {
+    justify-content: center !important;
+    margin-top: 12px !important;
+  }
+
+  .logoutBtn,
+  .topBar button,
+  .secondaryBtn,
+  .primaryBtn,
+  .smallBtn {
+    width: 100% !important;
+    max-width: 320px !important;
+    font-size: 15px !important;
+    padding: 12px 14px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  .studentTabs {
+    position: static !important;
+    top: auto !important;
+    z-index: auto !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    padding: 12px !important;
+    overflow: visible !important;
+  }
+
+  .studentTabs button,
+  .adminTabs button {
+    width: 100% !important;
+    white-space: normal !important;
+    font-size: 13px !important;
+    padding: 10px 8px !important;
+    line-height: 1.15 !important;
+  }
+
+  .studentPortalContent,
+  .innerPage {
+    padding: 16px 12px !important;
+    min-height: 0 !important;
+  }
+
+  .studentTabStack,
+  .dashboardHeader,
+  .adminToolbar,
+  .adminList,
+  .calendarManager,
+  .codeGrid {
+    width: 100% !important;
+    max-width: 360px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  .dashboardHeader h1,
+  .formCard h1,
+  .contentCard h1,
+  .successCard h1,
+  .loginCard h1,
+  .bigInfoPage h1,
+  .studentPanel h2 {
+    font-size: 26px !important;
+    line-height: 1.15 !important;
+  }
+
+  .bigInfoPage,
+  .contactInfoPage {
+    width: 100% !important;
+    max-width: 360px !important;
+    padding: 20px !important;
+  }
+
+  .bigInfoPage p,
+  .bigInfoPage li {
+    font-size: 16px !important;
+    line-height: 1.55 !important;
+  }
+
+  .subPageTop {
+    display: block !important;
+    min-height: 0 !important;
+    padding: 14px 12px 4px !important;
+    text-align: center !important;
+  }
+
+  .subPageLinks {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    margin: 12px auto 0 !important;
+    max-width: 360px !important;
+  }
+
+  .backHomeBtn,
+  .subPageLinks button {
+    width: 100% !important;
+    padding: 10px 8px !important;
+    font-size: 14px !important;
+    white-space: normal !important;
+  }
+
+  .subPageTop h3 {
+    font-size: 18px !important;
+    margin-top: 12px !important;
+  }
+
+  .inputGroup {
+    margin-bottom: 14px !important;
+  }
+
+  .compactInput {
+    max-width: 100% !important;
+  }
+
+  .inputGroup input,
+  .inputGroup select,
+  .searchInput {
+    width: 100% !important;
+    font-size: 16px !important;
+    padding: 12px !important;
+  }
+
+  .monthGrid {
+    grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+    gap: 4px !important;
+  }
+
+  .monthHeader {
+    display: grid !important;
+  }
+
+  .monthHeader b {
+    font-size: 10px !important;
+  }
+
+  .monthDay,
+  .blankDay {
+    min-height: 40px !important;
+    border-radius: 9px !important;
+    font-size: 13px !important;
+  }
+
+  .monthDay small {
+    display: none !important;
+  }
+
+  .selectedDateTitle h2 {
+    font-size: 22px !important;
+  }
+
+  .selectedDateTitle p,
+  .kidHelpText,
+  .bigHelpText {
+    font-size: 14px !important;
+    line-height: 1.45 !important;
+  }
+
+  .scheduleGroupCard {
+    padding: 16px !important;
+  }
+
+  .friendlySlot {
+    display: block !important;
+    padding: 14px !important;
+    border-radius: 14px !important;
+  }
+
+  .friendlySlot p {
+    font-size: 15px !important;
+  }
+
+  .slotTimeText {
+    font-size: 18px !important;
+  }
+
+  .friendlySlot span {
+    display: block !important;
+    margin-top: 12px !important;
+    min-width: 0 !important;
+    width: 100% !important;
+    padding: 9px 12px !important;
+  }
+
+  .selectionBar,
+  .successNotice,
+  .simpleHomeHeader,
+  .upcomingSlot,
+  .adminListItem,
+  .historyItem,
+  .slotListItem,
+  .parentKidHeader {
+    display: block !important;
+  }
+
+  .selectionBar .primaryBtn,
+  .successNotice button,
+  .simpleHomeHeader .primaryBtn,
+  .upcomingSlot button,
+  .adminListItem button {
+    margin-top: 12px !important;
+  }
+
+  .successNoticeBlock ul {
+    padding-left: 18px !important;
+  }
+
+  .arrivalSteps {
+    padding: 14px !important;
+    border-radius: 14px !important;
+  }
+
+  .arrivalSteps b {
+    font-size: 17px !important;
+  }
+
+  .arrivalSteps li {
+    font-size: 14px !important;
+  }
+
+  .consentLabel {
+    gap: 10px !important;
+    font-size: 14px !important;
+  }
+
+  .tableWrap,
+  table {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    display: block !important;
+  }
+
+  th,
+  td {
+    font-size: 13px !important;
+    padding: 8px !important;
+  }
+}
+
+@media (max-width: 430px) {
+  .brand h2 {
+    font-size: 23px !important;
+    max-width: 230px !important;
+  }
+
+  .brand p {
+    font-size: 16px !important;
+  }
+
+  .heroText h1 {
+    font-size: 30px !important;
+  }
+
+  .heroText h3 {
+    font-size: 20px !important;
+  }
+
+  .portalCards,
+  .homeNotice,
+  .whyMiniGrid,
+  .infoFooter,
+  .contentCard,
+  .formCard,
+  .successCard,
+  .dashCard,
+  .loginCard,
+  .studentPanel,
+  .parentKidCard,
+  .scheduleGroupCard,
+  .studentTabStack,
+  .dashboardHeader,
+  .adminToolbar,
+  .adminList,
+  .calendarManager,
+  .codeGrid,
+  .bigInfoPage,
+  .contactInfoPage {
+    max-width: 340px !important;
+  }
+}
