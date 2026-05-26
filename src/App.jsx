@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import "./App.css";
 
-const BUILD_MARKER = "SHHP_NO_USEEFFECT_PRODUCTION_FIX_V21";
+const BUILD_MARKER = "SHHP_PORTAL_BUTTON_FIX_V22";
 const ADMIN_USERNAME = "shhp.admin";
 const ADMIN_PASSWORD = "$winis1971!";
 
@@ -541,7 +541,7 @@ export default function App() {
     {page === "apply" && <Apply setPage={setPageSaved} addStudent={addStudent} />}
     {page === "student" && <StudentPortal setPage={setPageSaved} students={students} hours={hours} scheduleSlots={scheduleSlots} signups={signups} signIns={signIns} messages={messages} activeStudentId={activeStudentId} setActiveStudentId={setActiveStudentIdSaved} addSignup={addSignup} cancelSignup={cancelSignup} addHours={addHours} addSignIn={addSignIn} addCertificateRequest={addCertificateRequest} setAdminLoggedIn={setAdminLoggedInSaved} />}
     {page === "parent" && <ParentPortal setPage={setPageSaved} students={students} hours={hours} scheduleSlots={scheduleSlots} signups={signups} messages={messages} parentLogin={parentLogin} setParentLogin={setParentLoginSaved} addSignup={addSignup} cancelSignup={cancelSignup} emergencyContacts={emergencyContacts} setEmergencySaved={setEmergencySaved} setAdminLoggedIn={setAdminLoggedInSaved} />}
-    {page === "admin" && <AdminPortal setPage={setPageSaved} adminLoggedIn={adminLoggedIn} setAdminLoggedIn={setAdminLoggedInSaved} students={students} hours={hours} setHoursSaved={setHoursSaved} scheduleSlots={scheduleSlots} setScheduleSaved={setScheduleSaved} signups={signups} signIns={signIns} emails={emails} messages={messages} certificateRequests={certificateRequests} setCertificatesSaved={setCertificatesSaved} emergencyContacts={emergencyContacts} />}
+    {page === "admin" && <AdminPortal setPage={setPageSaved} adminLoggedIn={adminLoggedIn} setAdminLoggedIn={setAdminLoggedInSaved} students={students} hours={hours} setHoursSaved={setHoursSaved} scheduleSlots={scheduleSlots} setScheduleSaved={setScheduleSaved} signups={signups} signIns={signIns} messages={messages} certificateRequests={certificateRequests} setCertificatesSaved={setCertificatesSaved} emergencyContacts={emergencyContacts} />}
     {page === "about" && <AboutPage setPage={setPageSaved} />}
     {page === "why" && <WhyJoinPage setPage={setPageSaved} />}
     {page === "tier" && <TierPage setPage={setPageSaved} />}
@@ -691,7 +691,7 @@ function Apply({ setPage, addStudent }) {
 
 function StudentPortal({ setPage, students, hours, scheduleSlots, signups, signIns, messages, activeStudentId, setActiveStudentId, addSignup, cancelSignup, addHours, addSignIn, addCertificateRequest, setAdminLoggedIn }) {
   const student = students.find((s) => s.id === activeStudentId);
-  if (!student) return <SimplePage title="Student Portal Login" setPage={setPage}><StudentLogin students={students} setActiveStudentId={setActiveStudentIdSaved} /></SimplePage>;
+  if (!student) return <SimplePage title="Student Portal Login" setPage={setPage}><StudentLogin students={students} setActiveStudentId={setActiveStudentId} /></SimplePage>;
   return <StudentShell setPage={setPage} student={student} hours={hours} scheduleSlots={scheduleSlots} signups={signups.filter(s => s.studentId === student.id)} allSignups={signups} signIns={signIns.filter(s => s.studentId === student.id)} messages={messages.filter(m => m.studentId === student.id)} addSignup={addSignup} cancelSignup={cancelSignup} addHours={addHours} addSignIn={addSignIn} addCertificateRequest={addCertificateRequest} logout={() => setActiveStudentId("")} />;
 }
 
@@ -972,7 +972,7 @@ function ParentPortal({ setPage, students, hours, scheduleSlots, signups, messag
   if (!parentLogin) {
     return (
       <SimplePage title="Parent Portal Login" setPage={setPage}>
-        <ParentLogin students={students} setParentLogin={setParentLoginSaved} />
+        <ParentLogin students={students} setParentLogin={setParentLogin} />
       </SimplePage>
     );
   }
@@ -1241,7 +1241,7 @@ function AdminPortal({ setPage, adminLoggedIn, setAdminLoggedIn, students, hours
   if (!adminLoggedIn) {
     return (
       <SimplePage title="Admin Login" setPage={setPage}>
-        <AdminLoginMini setPage={setPage} setAdminLoggedIn={setAdminLoggedInSaved} />
+        <AdminLoginMini setPage={setPage} setAdminLoggedIn={setAdminLoggedIn} />
       </SimplePage>
     );
   }
@@ -1298,7 +1298,6 @@ function AdminPortal({ setPage, adminLoggedIn, setAdminLoggedIn, students, hours
         {tab === "signups" && <AdminSignups signups={signups} search={search} />}
         {tab === "certificates" && <AdminCertificates requests={certificateRequests} markCertificate={markCertificate} />}
         {tab === "emergency" && <AdminEmergencyInfo students={students} emergencyContacts={emergencyContacts} search={search} />}
-        {tab === "emails" && <AdminEmails emails={emails} />}
         {tab === "messages" && <AdminMessages messages={messages} />}
       </main>
     </div>
