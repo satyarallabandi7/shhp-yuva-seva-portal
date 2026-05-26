@@ -1,9 +1,58 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import "./App.css";
 
-const BUILD_MARKER = "SHHP_ACTIVE_NAV_UI_SCALE_V23";
+const BUILD_MARKER = "SHHP_BROWSER_BACK_ROUTING_V24";
 const ADMIN_USERNAME = "shhp.admin";
 const ADMIN_PASSWORD = "$winis1971!";
+
+const VALID_PAGES = ["home", "apply", "student", "parent", "admin", "about", "why", "tier", "contact"];
+const PAGE_TO_PATH = {
+  home: "/",
+  apply: "/apply",
+  student: "/student",
+  parent: "/parent",
+  admin: "/admin",
+  about: "/about",
+  why: "/why-join",
+  tier: "/tier-system",
+  contact: "/contact",
+};
+const PATH_TO_PAGE = {
+  "/": "home",
+  "/index.html": "home",
+  "/apply": "apply",
+  "/student": "student",
+  "/parent": "parent",
+  "/admin": "admin",
+  "/about": "about",
+  "/why-join": "why",
+  "/tier-system": "tier",
+  "/contact": "contact",
+};
+
+function cleanPathname(pathname) {
+  if (!pathname) return "/";
+  return pathname.length > 1 ? pathname.replace(/\/$/, "") : pathname;
+}
+
+function pageFromUrl() {
+  if (typeof window === "undefined") return "home";
+  return PATH_TO_PAGE[cleanPathname(window.location.pathname)] || "home";
+}
+
+function pathForPage(page) {
+  return PAGE_TO_PATH[VALID_PAGES.includes(page) ? page : "home"] || "/";
+}
+
+function updateBrowserUrl(page, replace = false) {
+  if (typeof window === "undefined") return;
+  const safePage = VALID_PAGES.includes(page) ? page : "home";
+  const nextPath = pathForPage(safePage);
+  const currentPath = cleanPathname(window.location.pathname);
+  if (currentPath === nextPath) return;
+  const method = replace ? "replaceState" : "pushState";
+  window.history[method]({ page: safePage }, "", nextPath);
+}
 
 const templeInfo = {
   name: "Sri HariHara Peetham",
@@ -361,7 +410,7 @@ function printReport(parentEmail, students, hours) {
 }
 
 export default function App() {
-  const [page, setPage] = useState(() => load("shhp_current_page_v20", "home"));
+  const [page, setPage] = useState(() => pageFromUrl());
   const [students, setStudents] = useState(() => load("shhp_students", demoStudents));
   const [hours, setHours] = useState(() => load("shhp_hours", demoHours));
   const [scheduleSlots, setScheduleSlots] = useState(() => load("shhp_schedule_slots_v11", generateDefaultSchedule()));
@@ -374,10 +423,31 @@ export default function App() {
   const [parentLogin, setParentLogin] = useState(() => load("shhp_parent_login_v20", null));
   const [adminLoggedIn, setAdminLoggedIn] = useState(() => load("shhp_admin_logged_in_v20", false));
 
-  function setPageSaved(next) { setPage(next); save("shhp_current_page_v20", next); }
+  function setPageSaved(next, options = {}) {
+    const safePage = VALID_PAGES.includes(next) ? next : "home";
+    setPage(safePage);
+    save("shhp_current_page_v20", safePage);
+    updateBrowserUrl(safePage, options.replace === true);
+  }
   function setActiveStudentIdSaved(next) { setActiveStudentId(next); save("shhp_active_student_id_v20", next); }
   function setParentLoginSaved(next) { setParentLogin(next); save("shhp_parent_login_v20", next); }
   function setAdminLoggedInSaved(next) { setAdminLoggedIn(next); save("shhp_admin_logged_in_v20", next); }
+
+  useEffect(() => {
+    const currentPage = pageFromUrl();
+    setPage(currentPage);
+    save("shhp_current_page_v20", currentPage);
+    updateBrowserUrl(currentPage, true);
+
+    function handleBrowserBack() {
+      const nextPage = pageFromUrl();
+      setPage(nextPage);
+      save("shhp_current_page_v20", nextPage);
+    }
+
+    window.addEventListener("popstate", handleBrowserBack);
+    return () => window.removeEventListener("popstate", handleBrowserBack);
+  }, []);
 
   function setStudentsSaved(next) { setStudents(next); save("shhp_students", next); }
   function setHoursSaved(next) { setHours(next); save("shhp_hours", next); }
@@ -536,16 +606,18 @@ export default function App() {
     return request;
   }
 
+  const currentPage = VALID_PAGES.includes(page) ? page : "home";
+
   return <div className="app" data-build={BUILD_MARKER}>
-    {page === "home" && <Home setPage={setPageSaved} />}
-    {page === "apply" && <Apply setPage={setPageSaved} addStudent={addStudent} />}
-    {page === "student" && <StudentPortal setPage={setPageSaved} students={students} hours={hours} scheduleSlots={scheduleSlots} signups={signups} signIns={signIns} messages={messages} activeStudentId={activeStudentId} setActiveStudentId={setActiveStudentIdSaved} addSignup={addSignup} cancelSignup={cancelSignup} addHours={addHours} addSignIn={addSignIn} addCertificateRequest={addCertificateRequest} setAdminLoggedIn={setAdminLoggedInSaved} />}
-    {page === "parent" && <ParentPortal setPage={setPageSaved} students={students} hours={hours} scheduleSlots={scheduleSlots} signups={signups} messages={messages} parentLogin={parentLogin} setParentLogin={setParentLoginSaved} addSignup={addSignup} cancelSignup={cancelSignup} emergencyContacts={emergencyContacts} setEmergencySaved={setEmergencySaved} setAdminLoggedIn={setAdminLoggedInSaved} />}
-    {page === "admin" && <AdminPortal setPage={setPageSaved} adminLoggedIn={adminLoggedIn} setAdminLoggedIn={setAdminLoggedInSaved} students={students} hours={hours} setHoursSaved={setHoursSaved} scheduleSlots={scheduleSlots} setScheduleSaved={setScheduleSaved} signups={signups} signIns={signIns} messages={messages} certificateRequests={certificateRequests} setCertificatesSaved={setCertificatesSaved} emergencyContacts={emergencyContacts} />}
-    {page === "about" && <AboutPage setPage={setPageSaved} />}
-    {page === "why" && <WhyJoinPage setPage={setPageSaved} />}
-    {page === "tier" && <TierPage setPage={setPageSaved} />}
-    {page === "contact" && <ContactPage setPage={setPageSaved} />}
+    {currentPage === "home" && <Home setPage={setPageSaved} />}
+    {currentPage === "apply" && <Apply setPage={setPageSaved} addStudent={addStudent} />}
+    {currentPage === "student" && <StudentPortal setPage={setPageSaved} students={students} hours={hours} scheduleSlots={scheduleSlots} signups={signups} signIns={signIns} messages={messages} activeStudentId={activeStudentId} setActiveStudentId={setActiveStudentIdSaved} addSignup={addSignup} cancelSignup={cancelSignup} addHours={addHours} addSignIn={addSignIn} addCertificateRequest={addCertificateRequest} setAdminLoggedIn={setAdminLoggedInSaved} />}
+    {currentPage === "parent" && <ParentPortal setPage={setPageSaved} students={students} hours={hours} scheduleSlots={scheduleSlots} signups={signups} messages={messages} parentLogin={parentLogin} setParentLogin={setParentLoginSaved} addSignup={addSignup} cancelSignup={cancelSignup} emergencyContacts={emergencyContacts} setEmergencySaved={setEmergencySaved} setAdminLoggedIn={setAdminLoggedInSaved} />}
+    {currentPage === "admin" && <AdminPortal setPage={setPageSaved} adminLoggedIn={adminLoggedIn} setAdminLoggedIn={setAdminLoggedInSaved} students={students} hours={hours} setHoursSaved={setHoursSaved} scheduleSlots={scheduleSlots} setScheduleSaved={setScheduleSaved} signups={signups} signIns={signIns} messages={messages} certificateRequests={certificateRequests} setCertificatesSaved={setCertificatesSaved} emergencyContacts={emergencyContacts} />}
+    {currentPage === "about" && <AboutPage setPage={setPageSaved} />}
+    {currentPage === "why" && <WhyJoinPage setPage={setPageSaved} />}
+    {currentPage === "tier" && <TierPage setPage={setPageSaved} />}
+    {currentPage === "contact" && <ContactPage setPage={setPageSaved} />}
   </div>;
 }
 
