@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import "./App.css";
 
-const BUILD_MARKER = "SHHP_MOBILE_REPAIR_V25";
+const BUILD_MARKER = "SHHP_SUPABASE_SHARED_DB_V26";
 const ADMIN_USERNAME = "shhp.admin";
 const ADMIN_PASSWORD = "$winis1971!";
 
@@ -52,6 +52,287 @@ function updateBrowserUrl(page, replace = false) {
   if (currentPath === nextPath) return;
   const method = replace ? "replaceState" : "pushState";
   window.history[method]({ page: safePage }, "", nextPath);
+}
+
+const SUPABASE_URL = "https://irnzwpwbodsoahqgicrd.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlybnp3cHdib2Rzb2FocWdpY3JkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MzIyOTYsImV4cCI6MjA5NTQwODI5Nn0.qM2uPq01uXnqY3JNSpkC86n8vlXK2MIEcekvbXkHih0";
+const SUPABASE_ENABLED = true;
+
+async function sbRequest(table, { method = "GET", query = "", body, prefer = "return=representation" } = {}) {
+  if (!SUPABASE_ENABLED) return [];
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/${table}${query}`, {
+    method,
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      "Content-Type": "application/json",
+      Prefer: prefer,
+    },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`${table} ${method} failed: ${text}`);
+  }
+
+  if (response.status === 204) return [];
+  const text = await response.text();
+  return text ? JSON.parse(text) : [];
+}
+
+async function sbSelect(table, query = "?select=*") {
+  return sbRequest(table, { query });
+}
+
+async function sbUpsert(table, rows, conflict = "id") {
+  if (!Array.isArray(rows) || rows.length === 0) return [];
+  return sbRequest(table, {
+    method: "POST",
+    query: `?on_conflict=${conflict}`,
+    body: rows,
+    prefer: "resolution=merge-duplicates,return=minimal",
+  });
+}
+
+async function sbDeleteById(table, id) {
+  if (!id) return [];
+  return sbRequest(table, {
+    method: "DELETE",
+    query: `?id=eq.${encodeURIComponent(id)}`,
+    prefer: "return=minimal",
+  });
+}
+
+function toIso(value) {
+  if (!value) return undefined;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? undefined : d.toISOString();
+}
+
+function studentFromDb(row) {
+  return {
+    id: row.id,
+    firstName: row.first_name || "",
+    lastName: row.last_name || "",
+    age: row.age || "",
+    grade: row.grade || "",
+    city: row.city || "",
+    parentName: row.parent_name || "",
+    parentEmail: row.parent_email || "",
+    parentPhone: row.parent_phone || "",
+    studentEmail: row.student_email || "",
+    interests: Array.isArray(row.interests) ? row.interests : [],
+    createdAt: row.created_at || "",
+  };
+}
+
+function studentToDb(student) {
+  return {
+    id: student.id,
+    first_name: student.firstName || "",
+    last_name: student.lastName || "",
+    age: student.age || "",
+    grade: student.grade || "",
+    city: student.city || "",
+    parent_name: student.parentName || "",
+    parent_email: student.parentEmail || "",
+    parent_phone: student.parentPhone || "",
+    student_email: student.studentEmail || "",
+    interests: student.interests || [],
+  };
+}
+
+function slotFromDb(row) {
+  return {
+    id: row.id,
+    date: row.date,
+    title: row.title,
+    start: row.start_time,
+    end: row.end_time,
+    category: row.category || "",
+    description: row.description || "",
+    active: row.active !== false,
+    maxVolunteers: row.max_volunteers || 5,
+  };
+}
+
+function slotToDb(slot) {
+  return {
+    id: slot.id,
+    date: slot.date,
+    title: slot.title,
+    start_time: slot.start,
+    end_time: slot.end,
+    category: slot.category || "",
+    description: slot.description || "",
+    active: slot.active !== false,
+    max_volunteers: slot.maxVolunteers || 5,
+  };
+}
+
+function signupFromDb(row) {
+  return {
+    id: row.id,
+    studentId: row.student_id,
+    studentName: row.student_name || "",
+    slotId: row.slot_id,
+    date: row.date,
+    title: row.title,
+    time: row.time,
+    category: row.category || "",
+    createdAt: row.created_at || "",
+  };
+}
+
+function signupToDb(signup) {
+  return {
+    id: signup.id,
+    student_id: signup.studentId,
+    student_name: signup.studentName || "",
+    slot_id: signup.slotId,
+    date: signup.date,
+    title: signup.title,
+    time: signup.time,
+    category: signup.category || "",
+  };
+}
+
+function signinFromDb(row) {
+  return {
+    id: row.id,
+    studentId: row.student_id,
+    studentName: row.student_name || "",
+    date: row.date,
+    session: row.session,
+    code: row.code,
+    time: row.time || "",
+    createdAt: row.created_at || "",
+  };
+}
+
+function signinToDb(item) {
+  return {
+    id: item.id,
+    student_id: item.studentId,
+    student_name: item.studentName || "",
+    date: item.date,
+    session: item.session,
+    code: item.code,
+    time: item.time || "",
+  };
+}
+
+function hourFromDb(row) {
+  return {
+    id: row.id,
+    signupId: row.signup_id || "",
+    studentId: row.student_id,
+    studentName: row.student_name || "",
+    eventName: row.event_name || row.category || "",
+    date: row.date,
+    hours: Number(row.hours || 0),
+    category: row.category || "",
+    description: row.description || "",
+    notes: row.notes || row.description || "",
+    status: row.status || "Pending",
+    createdAt: row.created_at || "",
+  };
+}
+
+function hourToDb(hour) {
+  return {
+    id: hour.id,
+    signup_id: hour.signupId || null,
+    student_id: hour.studentId,
+    student_name: hour.studentName || "",
+    date: hour.date,
+    hours: Number(hour.hours || 0),
+    event_name: hour.eventName || hour.category || "",
+    category: hour.category || hour.eventName || "",
+    description: hour.description || hour.notes || "",
+    notes: hour.notes || "",
+    status: hour.status || "Pending",
+  };
+}
+
+function certificateFromDb(row) {
+  return {
+    id: row.id,
+    studentId: row.student_id,
+    studentName: row.student_name || "",
+    parentEmail: row.parent_email || "",
+    status: row.status || "Pending",
+    createdAt: row.created_at || "",
+  };
+}
+
+function certificateToDb(request) {
+  return {
+    id: request.id,
+    student_id: request.studentId,
+    student_name: request.studentName || "",
+    parent_email: request.parentEmail || "",
+    status: request.status || "Pending",
+  };
+}
+
+function messageFromDb(row) {
+  return {
+    id: row.id,
+    audience: row.audience || "",
+    studentId: row.student_id || "",
+    parentEmail: row.parent_email || "",
+    title: row.title || "",
+    body: row.body || "",
+    createdAt: row.created_at || "",
+  };
+}
+
+function messageToDb(message) {
+  return {
+    id: message.id,
+    audience: message.audience || "",
+    student_id: message.studentId || "",
+    parent_email: message.parentEmail || "",
+    title: message.title || "",
+    body: message.body || "",
+  };
+}
+
+function emergencyMapFromDb(rows) {
+  return (rows || []).reduce((acc, row) => {
+    acc[row.student_id] = {
+      emergencyName: row.emergency_name || "",
+      emergencyPhone: row.emergency_phone || "",
+      relationship: row.relationship || "",
+      pickupNotes: row.pickup_notes || "",
+      specialNotes: row.special_notes || row.notes || "",
+      updatedAt: row.updated_at || "",
+    };
+    return acc;
+  }, {});
+}
+
+function emergencyMapToDbRows(map, students = []) {
+  return Object.entries(map || {}).map(([studentId, info]) => {
+    const student = students.find((s) => s.id === studentId);
+    return {
+      student_id: studentId,
+      parent_email: student?.parentEmail || "",
+      emergency_name: info.emergencyName || "",
+      emergency_phone: info.emergencyPhone || "",
+      relationship: info.relationship || "",
+      pickup_notes: info.pickupNotes || "",
+      special_notes: info.specialNotes || "",
+      notes: info.specialNotes || "",
+      updated_at: new Date().toISOString(),
+    };
+  });
+}
+
+function saveLocal(key, value) {
+  save(key, value);
 }
 
 const templeInfo = {
@@ -422,6 +703,7 @@ export default function App() {
   const [activeStudentId, setActiveStudentId] = useState(() => load("shhp_active_student_id_v20", ""));
   const [parentLogin, setParentLogin] = useState(() => load("shhp_parent_login_v20", null));
   const [adminLoggedIn, setAdminLoggedIn] = useState(() => load("shhp_admin_logged_in_v20", false));
+  const [dbStatus, setDbStatus] = useState("Connecting shared database...");
 
   function setPageSaved(next, options = {}) {
     const safePage = VALID_PAGES.includes(next) ? next : "home";
@@ -449,14 +731,111 @@ export default function App() {
     return () => window.removeEventListener("popstate", handleBrowserBack);
   }, []);
 
-  function setStudentsSaved(next) { setStudents(next); save("shhp_students", next); }
-  function setHoursSaved(next) { setHours(next); save("shhp_hours", next); }
-  function setScheduleSaved(next) { setScheduleSlots(next); save("shhp_schedule_slots_v11", next); }
-  function setSignupsSaved(next) { setSignups(next); save("shhp_signups_v11", next); }
-  function setSignInsSaved(next) { setSignIns(next); save("shhp_signins_v11", next); }
-  function setMessagesSaved(next) { setMessages(next); save("shhp_messages", next); }
-  function setCertificatesSaved(next) { setCertificateRequests(next); save("shhp_certificate_requests", next); }
-  function setEmergencySaved(next) { setEmergencyContacts(next); save("shhp_emergency_contacts_v12", next); }
+  useEffect(() => {
+    let alive = true;
+
+    async function loadSharedDatabase() {
+      try {
+        const [
+          studentRows,
+          slotRows,
+          signupRows,
+          signinRows,
+          hourRows,
+          certificateRows,
+          emergencyRows,
+          messageRows,
+        ] = await Promise.all([
+          sbSelect("students", "?select=*&order=created_at.asc"),
+          sbSelect("schedule_slots", "?select=*&order=date.asc,start_time.asc"),
+          sbSelect("signups", "?select=*&order=created_at.desc"),
+          sbSelect("signins", "?select=*&order=created_at.desc"),
+          sbSelect("volunteer_hours", "?select=*&order=created_at.desc"),
+          sbSelect("certificate_requests", "?select=*&order=created_at.desc"),
+          sbSelect("emergency_contacts", "?select=*"),
+          sbSelect("messages", "?select=*&order=created_at.desc"),
+        ]);
+
+        if (!alive) return;
+
+        const nextStudents = studentRows.map(studentFromDb);
+        const nextSlots = slotRows.map(slotFromDb);
+        const nextSignups = signupRows.map(signupFromDb);
+        const nextSignIns = signinRows.map(signinFromDb);
+        const nextHours = hourRows.map(hourFromDb);
+        const nextCertificates = certificateRows.map(certificateFromDb);
+        const nextEmergency = emergencyMapFromDb(emergencyRows);
+        const nextMessages = messageRows.map(messageFromDb);
+
+        setStudents(nextStudents);
+        setScheduleSlots(nextSlots.length ? nextSlots : generateDefaultSchedule());
+        setSignups(nextSignups);
+        setSignIns(nextSignIns);
+        setHours(nextHours);
+        setCertificateRequests(nextCertificates);
+        setEmergencyContacts(nextEmergency);
+        setMessages(nextMessages);
+
+        saveLocal("shhp_students", nextStudents);
+        saveLocal("shhp_schedule_slots_v11", nextSlots.length ? nextSlots : generateDefaultSchedule());
+        saveLocal("shhp_signups_v11", nextSignups);
+        saveLocal("shhp_signins_v11", nextSignIns);
+        saveLocal("shhp_hours", nextHours);
+        saveLocal("shhp_certificate_requests", nextCertificates);
+        saveLocal("shhp_emergency_contacts_v12", nextEmergency);
+        saveLocal("shhp_messages", nextMessages);
+
+        setDbStatus("Shared database connected");
+      } catch (error) {
+        console.error(error);
+        if (alive) setDbStatus("Database connection failed — using this browser only");
+      }
+    }
+
+    loadSharedDatabase();
+    return () => { alive = false; };
+  }, []);
+
+  function setStudentsSaved(next) {
+    setStudents(next);
+    save("shhp_students", next);
+    sbUpsert("students", next.map(studentToDb)).catch((error) => console.error(error));
+  }
+  function setHoursSaved(next) {
+    setHours(next);
+    save("shhp_hours", next);
+    sbUpsert("volunteer_hours", next.map(hourToDb)).catch((error) => console.error(error));
+  }
+  function setScheduleSaved(next) {
+    setScheduleSlots(next);
+    save("shhp_schedule_slots_v11", next);
+    sbUpsert("schedule_slots", next.map(slotToDb)).catch((error) => console.error(error));
+  }
+  function setSignupsSaved(next) {
+    setSignups(next);
+    save("shhp_signups_v11", next);
+    sbUpsert("signups", next.map(signupToDb)).catch((error) => console.error(error));
+  }
+  function setSignInsSaved(next) {
+    setSignIns(next);
+    save("shhp_signins_v11", next);
+    sbUpsert("signins", next.map(signinToDb)).catch((error) => console.error(error));
+  }
+  function setMessagesSaved(next) {
+    setMessages(next);
+    save("shhp_messages", next);
+    sbUpsert("messages", next.map(messageToDb)).catch((error) => console.error(error));
+  }
+  function setCertificatesSaved(next) {
+    setCertificateRequests(next);
+    save("shhp_certificate_requests", next);
+    sbUpsert("certificate_requests", next.map(certificateToDb)).catch((error) => console.error(error));
+  }
+  function setEmergencySaved(next) {
+    setEmergencyContacts(next);
+    save("shhp_emergency_contacts_v12", next);
+    sbUpsert("emergency_contacts", emergencyMapToDbRows(next, students), "student_id").catch((error) => console.error(error));
+  }
 
   function addStudent(data) {
     const id = makeId(students);
@@ -533,6 +912,7 @@ export default function App() {
   function cancelSignup(student, signupId) {
     const signup = signups.find((item) => item.id === signupId);
     setSignupsSaved(signups.filter((item) => item.id !== signupId));
+    sbDeleteById("signups", signupId).catch((error) => console.error(error));
     if (signup) setMessagesSaved([{ id: "MSG-CANCEL-" + Date.now(), audience: "student", studentId: student.id, parentEmail: student.parentEmail, title: "Seva Slot Cancelled", body: `You cancelled ${signup.title} on ${signup.date}, ${signup.time}.`, createdAt: new Date().toLocaleString() }, ...messages]);
   }
 
@@ -609,6 +989,7 @@ export default function App() {
   const currentPage = VALID_PAGES.includes(page) ? page : "home";
 
   return <div className="app" data-build={BUILD_MARKER}>
+    <div className={dbStatus.includes("failed") ? "dbBanner dbBannerError" : "dbBanner"}>{dbStatus}</div>
     {currentPage === "home" && <Home setPage={setPageSaved} />}
     {currentPage === "apply" && <Apply setPage={setPageSaved} addStudent={addStudent} />}
     {currentPage === "student" && <StudentPortal setPage={setPageSaved} students={students} hours={hours} scheduleSlots={scheduleSlots} signups={signups} signIns={signIns} messages={messages} activeStudentId={activeStudentId} setActiveStudentId={setActiveStudentIdSaved} addSignup={addSignup} cancelSignup={cancelSignup} addHours={addHours} addSignIn={addSignIn} addCertificateRequest={addCertificateRequest} setAdminLoggedIn={setAdminLoggedInSaved} />}
