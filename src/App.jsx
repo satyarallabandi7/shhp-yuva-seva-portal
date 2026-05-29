@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import "./App.css";
 
-const BUILD_MARKER = "SHHP_PERSIST_TABS_WEEKLY_SIGNUPS_V30";
+const BUILD_MARKER = "SHHP_SIGNIN_TICKETS_ADMIN_SIGNUPS_V31";
 const ADMIN_USERNAME = "shhp.admin";
 const ADMIN_PASSWORD = "$winis1971!";
 
@@ -210,6 +210,7 @@ function signupToDb(signup) {
 function signinFromDb(row) {
   return {
     id: row.id,
+    slotId: row.slot_id || "",
     studentId: row.student_id,
     studentName: row.student_name || "",
     date: row.date,
@@ -223,6 +224,7 @@ function signinFromDb(row) {
 function signinToDb(item) {
   return {
     id: item.id,
+    slot_id: item.slotId || "",
     student_id: item.studentId,
     student_name: item.studentName || "",
     date: item.date,
@@ -307,6 +309,47 @@ function messageToDb(message) {
     title: message.title || "",
     body: message.body || "",
   };
+}
+
+function ticketFromDb(row) {
+  return {
+    id: row.id,
+    ticketNumber: row.ticket_number || "",
+    senderType: row.sender_type || "student",
+    studentId: row.student_id || "",
+    studentName: row.student_name || "",
+    parentEmail: row.parent_email || "",
+    title: row.title || "",
+    body: row.body || "",
+    status: row.status || "Open",
+    replies: Array.isArray(row.replies) ? row.replies : [],
+    createdAt: row.created_at || "",
+    updatedAt: row.updated_at || "",
+  };
+}
+
+function ticketToDb(ticket) {
+  return {
+    id: ticket.id,
+    ticket_number: ticket.ticketNumber || "",
+    sender_type: ticket.senderType || "student",
+    student_id: ticket.studentId || "",
+    student_name: ticket.studentName || "",
+    parent_email: ticket.parentEmail || "",
+    title: ticket.title || "",
+    body: ticket.body || "",
+    status: ticket.status || "Open",
+    replies: ticket.replies || [],
+    updated_at: new Date().toISOString(),
+  };
+}
+
+function nextTicketNumber(tickets) {
+  const max = (tickets || []).reduce((highest, ticket) => {
+    const value = Number(ticket.ticketNumber || 0);
+    return Number.isFinite(value) && value > highest ? value : highest;
+  }, 0);
+  return String(max + 1).padStart(3, "0");
 }
 
 function emergencyMapFromDb(rows) {
@@ -1046,6 +1089,26 @@ function mergeStudentSignups(signupsForSection) {
   return Array.from(map.values()).sort((a, b) => a.studentName.localeCompare(b.studentName));
 }
 
+function compactSignupRange(signupsForStudent) {
+  const sorted = [...signupsForStudent].sort((a, b) => String(a.time).localeCompare(String(b.time)));
+  if (!sorted.length) return "No slots";
+
+  const firstParts = String(sorted[0].time || "").split(" - ");
+  const lastParts = String(sorted[sorted.length - 1].time || "").split(" - ");
+  const firstStart = firstParts[0] || sorted[0].time || "";
+  const lastEnd = lastParts[1] || lastParts[0] || sorted[sorted.length - 1].time || "";
+
+  if (sorted.length === 1) return `${sorted[0].time} (1 slot)`;
+  return `${firstStart} - ${lastEnd} (${sorted.length} slots)`;
+}
+
+function matchesSession(signup, session) {
+  const sessionText = `${signup.title || ""} ${signup.category || ""} ${signup.time || ""}`.toLowerCase();
+  return session === "Morning"
+    ? sessionText.includes("morning") || sessionText.includes("am")
+    : sessionText.includes("evening") || sessionText.includes("pm");
+}
+
 export default function App() {
   const [page, setPage] = useState(() => pageFromUrl());
   const [students, setStudents] = useState(() => load("shhp_students", demoStudents));
@@ -1055,6 +1118,7 @@ export default function App() {
   const [signIns, setSignIns] = useState(() => load("shhp_signins_v11", []));
   const [messages, setMessages] = useState(() => load("shhp_messages", []));
   const [certificateRequests, setCertificateRequests] = useState(() => load("shhp_certificate_requests", []));
+  const [tickets, setTickets] = useState(() => load("shhp_support_tickets_v31", []));
   const [emergencyContacts, setEmergencyContacts] = useState(() => load("shhp_emergency_contacts_v12", {}));
   const [activeStudentId, setActiveStudentId] = useState(() => load("shhp_active_student_id_v20", ""));
   const [parentLogin, setParentLogin] = useState(() => load("shhp_parent_login_v20", null));
@@ -1099,6 +1163,7 @@ export default function App() {
           signinRows,
           hourRows,
           certificateRows,
+          ticketRows,
           emergencyRows,
           messageRows,
         ] = await Promise.all([
@@ -1108,6 +1173,7 @@ export default function App() {
           sbSelect("signins", "?select=*&order=created_at.desc"),
           sbSelect("volunteer_hours", "?select=*&order=created_at.desc"),
           sbSelect("certificate_requests", "?select=*&order=created_at.desc"),
+          sbSelect("support_tickets", "?select=*&order=created_at.desc"),
           sbSelect("emergency_contacts", "?select=*"),
           sbSelect("messages", "?select=*&order=created_at.desc"),
         ]);
@@ -1122,6 +1188,7 @@ export default function App() {
         const nextSignIns = signinRows.map(signinFromDb);
         const nextHours = hourRows.map(hourFromDb);
         const nextCertificates = certificateRows.map(certificateFromDb);
+        const nextTickets = ticketRows.map(ticketFromDb);
         const nextEmergency = emergencyMapFromDb(emergencyRows);
         const nextMessages = messageRows.map(messageFromDb);
 
@@ -1131,6 +1198,7 @@ export default function App() {
         setSignIns(nextSignIns);
         setHours(nextHours);
         setCertificateRequests(nextCertificates);
+        setTickets(nextTickets);
         setEmergencyContacts(nextEmergency);
         setMessages(nextMessages);
 
@@ -1140,6 +1208,7 @@ export default function App() {
         saveLocal("shhp_signins_v11", nextSignIns);
         saveLocal("shhp_hours", nextHours);
         saveLocal("shhp_certificate_requests", nextCertificates);
+        saveLocal("shhp_support_tickets_v31", nextTickets);
         saveLocal("shhp_emergency_contacts_v12", nextEmergency);
         saveLocal("shhp_messages", nextMessages);
 
@@ -1192,6 +1261,11 @@ export default function App() {
     setCertificateRequests(next);
     save("shhp_certificate_requests", next);
     sbUpsert("certificate_requests", next.map(certificateToDb)).catch((error) => console.error(error));
+  }
+  function setTicketsSaved(next) {
+    setTickets(next);
+    save("shhp_support_tickets_v31", next);
+    sbUpsert("support_tickets", next.map(ticketToDb)).catch((error) => console.error(error));
   }
   function setEmergencySaved(next) {
     setEmergencyContacts(next);
@@ -1265,6 +1339,68 @@ export default function App() {
     setDbStatus(student ? `Shared database connected — deleted ${student.firstName} ${student.lastName}` : "Shared database connected — student deleted");
   }
 
+  function deleteSignupById(signupId) {
+    const signup = signups.find((item) => item.id === signupId);
+    const nextSignups = signups.filter((item) => item.id !== signupId);
+    setSignupsSaved(nextSignups);
+    sbDeleteById("signups", signupId)
+      .then(() => setDbStatus("Shared database connected — signup cancelled"))
+      .catch((error) => {
+        console.error(error);
+        setDbStatus("Signup removed here, but database delete failed");
+      });
+    return signup;
+  }
+
+  function createTicket(data) {
+    const ticket = {
+      id: "TICKET-" + Date.now() + "-" + Math.random().toString(16).slice(2),
+      ticketNumber: nextTicketNumber(tickets),
+      senderType: data.senderType,
+      studentId: data.studentId || "",
+      studentName: data.studentName || "",
+      parentEmail: data.parentEmail || "",
+      title: data.title || "Message",
+      body: data.body || "",
+      status: "Open",
+      replies: [],
+      createdAt: new Date().toLocaleString(),
+      updatedAt: new Date().toLocaleString(),
+    };
+
+    setTicketsSaved([ticket, ...tickets]);
+    setDbStatus(`Shared database connected — ticket #${ticket.ticketNumber} created`);
+    return ticket;
+  }
+
+  function replyTicket(ticketId, replyBody) {
+    const nextTickets = tickets.map((ticket) => {
+      if (ticket.id !== ticketId) return ticket;
+      return {
+        ...ticket,
+        status: "Replied",
+        replies: [
+          ...(ticket.replies || []),
+          { from: "Admin", body: replyBody, createdAt: new Date().toLocaleString() },
+        ],
+        updatedAt: new Date().toLocaleString(),
+      };
+    });
+    setTicketsSaved(nextTickets);
+  }
+
+  function closeTicket(ticketId) {
+    const nextTickets = tickets.map((ticket) => ticket.id === ticketId ? { ...ticket, status: "Closed", updatedAt: new Date().toLocaleString() } : ticket);
+    setTicketsSaved(nextTickets);
+  }
+
+  function deleteTicket(ticketId) {
+    const nextTickets = tickets.filter((ticket) => ticket.id !== ticketId);
+    setTickets(nextTickets);
+    save("shhp_support_tickets_v31", nextTickets);
+    sbDeleteById("support_tickets", ticketId).catch((error) => console.error(error));
+  }
+
   function addSignup(student, slotOrSlots) {
     const slotsToAdd = Array.isArray(slotOrSlots) ? slotOrSlots : [slotOrSlots];
     const latestSignups = load("shhp_signups_v11", signups);
@@ -1326,9 +1462,7 @@ export default function App() {
   }
 
   function cancelSignup(student, signupId) {
-    const signup = signups.find((item) => item.id === signupId);
-    setSignupsSaved(signups.filter((item) => item.id !== signupId));
-    sbDeleteById("signups", signupId).catch((error) => console.error(error));
+    const signup = deleteSignupById(signupId);
     if (signup) setMessagesSaved([{ id: "MSG-CANCEL-" + Date.now(), audience: "student", studentId: student.id, parentEmail: student.parentEmail, title: "Seva Slot Cancelled", body: `You cancelled ${signup.title} on ${signup.date}, ${signup.time}.`, createdAt: new Date().toLocaleString() }, ...messages]);
   }
 
@@ -1337,35 +1471,40 @@ export default function App() {
   }
 
 
-  function addSignIn(student, session, code) {
-    const record = {
-      id: "IN-" + Date.now(),
-      studentId: student.id,
-      studentName: `${student.firstName} ${student.lastName}`,
-      date: today(),
-      session,
-      code,
-      time: new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
-      createdAt: new Date().toLocaleString(),
-    };
+  function addSignIn(student, session, code, selectedSignups = []) {
+    const targetSignups = selectedSignups.filter(Boolean);
+    if (!targetSignups.length) {
+      return { recordCount: 0, autoSubmittedCount: 0, skippedCount: 0 };
+    }
 
-    const todaysSignedSlots = signups.filter((signup) => {
-      const matchesStudent = signup.studentId === student.id;
-      const matchesDate = signup.date === today();
-      const sessionText = `${signup.title} ${signup.category} ${signup.time}`.toLowerCase();
-      const matchesSession =
-        session === "Morning"
-          ? sessionText.includes("morning") || sessionText.includes("am")
-          : sessionText.includes("evening") || sessionText.includes("pm");
-      return matchesStudent && matchesDate && matchesSession;
-    });
+    const alreadySignedSlotIds = new Set(
+      signIns
+        .filter((item) => item.studentId === student.id && item.date === today())
+        .map((item) => item.slotId)
+        .filter(Boolean)
+    );
 
-    const newHourRequests = todaysSignedSlots
+    const newRecords = targetSignups
+      .filter((signup) => !alreadySignedSlotIds.has(signup.id))
+      .map((signup) => ({
+        id: "IN-" + signup.id + "-" + Date.now(),
+        slotId: signup.id,
+        studentId: student.id,
+        studentName: `${student.firstName} ${student.lastName}`,
+        date: today(),
+        session,
+        code,
+        time: new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
+        createdAt: new Date().toLocaleString(),
+      }));
+
+    const newHourRequests = targetSignups
       .filter((signup) => !hours.some((hour) => hour.signupId === signup.id))
       .map((signup) => ({
         id: "HR-AUTO-" + signup.id,
         signupId: signup.id,
         studentId: student.id,
+        studentName: `${student.firstName} ${student.lastName}`,
         eventName: signup.title,
         date: signup.date,
         hours: 1,
@@ -1373,7 +1512,10 @@ export default function App() {
         status: "Pending",
       }));
 
-    setSignInsSaved([record, ...signIns]);
+    if (newRecords.length) {
+      setSignInsSaved([...newRecords, ...signIns]);
+    }
+
     if (newHourRequests.length) {
       setHoursSaved([...newHourRequests, ...hours]);
     }
@@ -1386,14 +1528,18 @@ export default function App() {
         parentEmail: student.parentEmail,
         title: "Signed In",
         body: newHourRequests.length
-          ? `You signed in for ${session} seva. ${newHourRequests.length} hour request(s) were automatically submitted for admin approval.`
-          : `You signed in for ${session} seva. No matching signed-up slot was found for automatic hour submission.`,
+          ? `You signed in for ${newRecords.length} selected slot(s). ${newHourRequests.length} hour request(s) were automatically submitted for admin approval.`
+          : `You signed in, but no new hour requests were submitted because the selected slot(s) were already submitted.`,
         createdAt: new Date().toLocaleString(),
       },
       ...messages,
     ]);
 
-    return { record, autoSubmittedCount: newHourRequests.length };
+    return {
+      recordCount: newRecords.length,
+      autoSubmittedCount: newHourRequests.length,
+      skippedCount: targetSignups.length - newRecords.length,
+    };
   }
 
   function addCertificateRequest(student) {
@@ -1408,9 +1554,9 @@ export default function App() {
     <div className={dbStatus.includes("failed") ? "dbBanner dbBannerError" : "dbBanner"}>{dbStatus}</div>
     {currentPage === "home" && <Home setPage={setPageSaved} />}
     {currentPage === "apply" && <Apply setPage={setPageSaved} addStudent={addStudent} />}
-    {currentPage === "student" && <StudentPortal setPage={setPageSaved} students={students} hours={hours} scheduleSlots={scheduleSlots} signups={signups} signIns={signIns} messages={messages} certificateRequests={certificateRequests} activeStudentId={activeStudentId} setActiveStudentId={setActiveStudentIdSaved} addSignup={addSignup} cancelSignup={cancelSignup} addHours={addHours} addSignIn={addSignIn} addCertificateRequest={addCertificateRequest} setAdminLoggedIn={setAdminLoggedInSaved} />}
-    {currentPage === "parent" && <ParentPortal setPage={setPageSaved} students={students} hours={hours} scheduleSlots={scheduleSlots} signups={signups} messages={messages} parentLogin={parentLogin} setParentLogin={setParentLoginSaved} addSignup={addSignup} cancelSignup={cancelSignup} emergencyContacts={emergencyContacts} setEmergencySaved={setEmergencySaved} setAdminLoggedIn={setAdminLoggedInSaved} />}
-    {currentPage === "admin" && <AdminPortal setPage={setPageSaved} adminLoggedIn={adminLoggedIn} setAdminLoggedIn={setAdminLoggedInSaved} students={students} hours={hours} setHoursSaved={setHoursSaved} scheduleSlots={scheduleSlots} setScheduleSaved={setScheduleSaved} signups={signups} signIns={signIns} messages={messages} certificateRequests={certificateRequests} setCertificatesSaved={setCertificatesSaved} emergencyContacts={emergencyContacts} updateStudent={updateStudent} deleteStudent={deleteStudent} />}
+    {currentPage === "student" && <StudentPortal setPage={setPageSaved} students={students} hours={hours} scheduleSlots={scheduleSlots} signups={signups} signIns={signIns} messages={messages} certificateRequests={certificateRequests} tickets={tickets} activeStudentId={activeStudentId} setActiveStudentId={setActiveStudentIdSaved} addSignup={addSignup} cancelSignup={cancelSignup} addHours={addHours} addSignIn={addSignIn} addCertificateRequest={addCertificateRequest} createTicket={createTicket} setAdminLoggedIn={setAdminLoggedInSaved} />}
+    {currentPage === "parent" && <ParentPortal setPage={setPageSaved} students={students} hours={hours} scheduleSlots={scheduleSlots} signups={signups} messages={messages} tickets={tickets} parentLogin={parentLogin} setParentLogin={setParentLoginSaved} addSignup={addSignup} cancelSignup={cancelSignup} emergencyContacts={emergencyContacts} setEmergencySaved={setEmergencySaved} createTicket={createTicket} setAdminLoggedIn={setAdminLoggedInSaved} />}
+    {currentPage === "admin" && <AdminPortal setPage={setPageSaved} adminLoggedIn={adminLoggedIn} setAdminLoggedIn={setAdminLoggedInSaved} students={students} hours={hours} setHoursSaved={setHoursSaved} scheduleSlots={scheduleSlots} setScheduleSaved={setScheduleSaved} signups={signups} signIns={signIns} messages={messages} certificateRequests={certificateRequests} setCertificatesSaved={setCertificatesSaved} emergencyContacts={emergencyContacts} tickets={tickets} updateStudent={updateStudent} deleteStudent={deleteStudent} deleteSignupById={deleteSignupById} replyTicket={replyTicket} closeTicket={closeTicket} deleteTicket={deleteTicket} />}
     {currentPage === "about" && <AboutPage setPage={setPageSaved} />}
     {currentPage === "why" && <WhyJoinPage setPage={setPageSaved} />}
     {currentPage === "tier" && <TierPage setPage={setPageSaved} />}
@@ -1576,21 +1722,21 @@ function Apply({ setPage, addStudent }) {
   </div><button className="primaryBtn">Submit Application</button></form></SimplePage>;
 }
 
-function StudentPortal({ setPage, students, hours, scheduleSlots, signups, signIns, messages, certificateRequests, activeStudentId, setActiveStudentId, addSignup, cancelSignup, addHours, addSignIn, addCertificateRequest, setAdminLoggedIn }) {
+function StudentPortal({ setPage, students, hours, scheduleSlots, signups, signIns, messages, certificateRequests, tickets, activeStudentId, setActiveStudentId, addSignup, cancelSignup, addHours, addSignIn, addCertificateRequest, createTicket, setAdminLoggedIn }) {
   const student = students.find((s) => s.id === activeStudentId);
   if (!student) return <SimplePage title="Student Portal Login" setPage={setPage}><StudentLogin students={students} setActiveStudentId={setActiveStudentId} setPage={setPage} /></SimplePage>;
-  return <StudentShell setPage={setPage} student={student} hours={hours} scheduleSlots={scheduleSlots} signups={signups.filter(s => s.studentId === student.id)} allSignups={signups} signIns={signIns.filter(s => s.studentId === student.id)} messages={messages.filter(m => m.studentId === student.id)} certificateRequests={certificateRequests.filter(r => r.studentId === student.id)} addSignup={addSignup} cancelSignup={cancelSignup} addHours={addHours} addSignIn={addSignIn} addCertificateRequest={addCertificateRequest} logout={() => setActiveStudentId("")} />;
+  return <StudentShell setPage={setPage} student={student} hours={hours} scheduleSlots={scheduleSlots} signups={signups.filter(s => s.studentId === student.id)} allSignups={signups} signIns={signIns.filter(s => s.studentId === student.id)} messages={messages.filter(m => m.studentId === student.id)} certificateRequests={certificateRequests.filter(r => r.studentId === student.id)} tickets={tickets.filter(t => t.studentId === student.id && t.senderType === "student")} addSignup={addSignup} cancelSignup={cancelSignup} addHours={addHours} addSignIn={addSignIn} addCertificateRequest={addCertificateRequest} createTicket={createTicket} logout={() => setActiveStudentId("")} />;
 }
 
-function StudentShell({ setPage, student, hours, scheduleSlots, signups, allSignups, signIns, messages, certificateRequests, addSignup, cancelSignup, addHours, addSignIn, addCertificateRequest, logout }) {
+function StudentShell({ setPage, student, hours, scheduleSlots, signups, allSignups, signIns, messages, certificateRequests, tickets, addSignup, cancelSignup, addHours, addSignIn, addCertificateRequest, createTicket, logout }) {
   const [tab, setTabRaw] = useState(() => load(`shhp_student_tab_v30_${student.id}`, "home"));
   function setTab(nextTab) {
     setTabRaw(nextTab);
     save(`shhp_student_tab_v30_${student.id}`, nextTab);
   }
   const stats = statsFor(student.id, hours);
-  const tabs = [["home", "Home"], ["schedule", "Sign Up / Schedule Slots"], ["signin", "Sign In"], ["submit", "Submit Hours"], ["approved", "Approved Hours"], ["tier", "Current Tier"], ["certificate", "Certificate"], ["contact", "Contact Us"]];
-  return <div className="studentPortalPage"><div className="studentPortalTop"><div><h1>Student Portal</h1><p>{student.firstName} {student.lastName} · ID {student.id}</p></div><div className="studentTopActions"><button className="logoutBtn" onClick={() => setPage("home")}>Home</button><button className="logoutBtn" onClick={logout}>Log Out</button></div></div><div className="studentTabs">{tabs.map(([key, label]) => <button key={key} className={tab === key ? "activeStudentTab" : ""} onClick={() => setTab(key)}>{label}</button>)}</div><main className="studentPortalContent"><div className="studentTabStack">{tab === "home" && <StudentHome student={student} signups={signups} cancelSignup={cancelSignup} setTab={setTab} />}{tab === "schedule" && <StudentSchedule student={student} scheduleSlots={scheduleSlots} signups={signups} allSignups={allSignups} addSignup={addSignup} setTab={setTab} />}{tab === "signin" && <StudentSignIn student={student} signups={signups} signIns={signIns} addSignIn={addSignIn} />}{tab === "submit" && <SubmitHours student={student} addHours={addHours} />}{tab === "approved" && <ApprovedHours hours={hours.filter(h => h.studentId === student.id)} />}{tab === "tier" && <CurrentTier stats={stats} />}{tab === "certificate" && <CertificateTab student={student} stats={stats} certificateRequests={certificateRequests} addCertificateRequest={addCertificateRequest} />}{tab === "contact" && <ContactBox />}</div></main></div>;
+  const tabs = [["home", "Home"], ["schedule", "Sign Up / Schedule Slots"], ["signin", "Sign In"], ["submit", "Submit Hours"], ["approved", "Approved Hours"], ["tier", "Current Tier"], ["certificate", "Certificate"], ["messages", "Message Admin"], ["contact", "Contact Us"]];
+  return <div className="studentPortalPage"><div className="studentPortalTop"><div><h1>Student Portal</h1><p>{student.firstName} {student.lastName} · ID {student.id}</p></div><div className="studentTopActions"><button className="logoutBtn" onClick={() => setPage("home")}>Home</button><button className="logoutBtn" onClick={logout}>Log Out</button></div></div><div className="studentTabs">{tabs.map(([key, label]) => <button key={key} className={tab === key ? "activeStudentTab" : ""} onClick={() => setTab(key)}>{label}</button>)}</div><main className="studentPortalContent"><div className="studentTabStack">{tab === "home" && <StudentHome student={student} signups={signups} cancelSignup={cancelSignup} setTab={setTab} />}{tab === "schedule" && <StudentSchedule student={student} scheduleSlots={scheduleSlots} signups={signups} allSignups={allSignups} addSignup={addSignup} setTab={setTab} />}{tab === "signin" && <StudentSignIn student={student} signups={signups} signIns={signIns} addSignIn={addSignIn} />}{tab === "submit" && <SubmitHours student={student} addHours={addHours} />}{tab === "approved" && <ApprovedHours hours={hours.filter(h => h.studentId === student.id)} />}{tab === "tier" && <CurrentTier stats={stats} />}{tab === "certificate" && <CertificateTab student={student} stats={stats} certificateRequests={certificateRequests} addCertificateRequest={addCertificateRequest} />}{tab === "messages" && <StudentTickets student={student} tickets={tickets} createTicket={createTicket} />}{tab === "contact" && <ContactBox />}</div></main></div>;
 }
 
 function StudentHome({ student, signups, cancelSignup, setTab }) {
@@ -1754,44 +1900,56 @@ function StudentSchedule({ student, scheduleSlots, signups, allSignups, addSignu
 
 function StudentSignIn({ student, signups, signIns, addSignIn }) {
   const [session, setSession] = useState("Morning");
+  const [selectedSlotIds, setSelectedSlotIds] = useState([]);
   const [code, setCode] = useState("");
   const [msg, setMsg] = useState("");
   const todaysSlots = signups.filter((s) => s.date === today());
+  const sessionSlots = todaysSlots.filter((s) => matchesSession(s, session));
+  const alreadySignedSlotIds = new Set(
+    signIns
+      .filter((item) => item.studentId === student.id && item.date === today())
+      .map((item) => item.slotId)
+      .filter(Boolean)
+  );
 
   function submit(e) {
     e.preventDefault();
+
     const expected = codeFor(today(), session);
     if (code.trim() !== expected) {
       setMsg("Invalid code. Please ask the front desk for today's 4-digit code.");
       return;
     }
 
-    const already = signIns.some((item) => item.date === today() && item.session === session);
-    if (already) {
-      setMsg(`You already signed in for ${session} today.`);
+    const selectedSignups = sessionSlots.filter((signup) => selectedSlotIds.includes(signup.id));
+
+    if (!selectedSignups.length) {
+      setMsg("Please select at least one signed-up time slot.");
       return;
     }
 
-    const result = addSignIn(student, session, expected);
+    const result = addSignIn(student, session, expected, selectedSignups);
     setCode("");
-    setMsg(
-      result.autoSubmittedCount
-        ? `Signed in! ${result.autoSubmittedCount} hour request(s) were automatically submitted for approval.`
-        : `Signed in! No matching signed-up slot was found, so no hours were auto-submitted.`
-    );
+    setSelectedSlotIds([]);
+
+    if (result.recordCount || result.autoSubmittedCount) {
+      setMsg(`Signed in for ${result.recordCount} selected slot(s). ${result.autoSubmittedCount} hour request(s) were submitted for approval.`);
+    } else {
+      setMsg("Those selected slots were already signed in/submitted. Choose a new slot if you signed up later.");
+    }
   }
 
   return (
     <div className="studentPanel">
       <h2>Sign In at the Temple</h2>
-      <p className="kidHelpText">When you arrive, ask the front desk for the 4-digit code. After you sign in, your matching slot will be submitted for hours approval automatically.</p>
+      <p className="kidHelpText">Select the exact time slot(s) you are attending, enter the daily code, and submit. If you sign up for more hours later, you can come back and sign in for the new slot with the same valid code.</p>
       <div className="arrivalSteps">
         <b>What to do when you arrive</b>
         <ol>
           <li>Arrive at the temple for your selected slot.</li>
           <li>Ask the coordinator or front desk for today’s 4-digit code.</li>
-          <li>Enter the code here and choose Morning or Evening.</li>
-          <li>Your hours will be sent for approval automatically.</li>
+          <li>Choose Morning or Evening, then select the time slot(s) you are attending.</li>
+          <li>Your selected hours will be sent for approval automatically.</li>
         </ol>
       </div>
 
@@ -1803,10 +1961,28 @@ function StudentSignIn({ student, signups, signIns, addSignIn }) {
       <form onSubmit={submit}>
         <label className="inputGroup compactInput">
           <span>Session</span>
-          <select value={session} onChange={(e) => setSession(e.target.value)}>
+          <select value={session} onChange={(e) => { setSession(e.target.value); setSelectedSlotIds([]); setMsg(""); }}>
             <option>Morning</option>
             <option>Evening</option>
           </select>
+        </label>
+
+        <label className="inputGroup">
+          <span>Select Time Slot(s)</span>
+          <select
+            multiple
+            className="multiSelectSlots"
+            value={selectedSlotIds}
+            onChange={(e) => setSelectedSlotIds(Array.from(e.target.selectedOptions).map((option) => option.value))}
+          >
+            {sessionSlots.map((signup) => (
+              <option key={signup.id} value={signup.id} disabled={alreadySignedSlotIds.has(signup.id)}>
+                {signup.time} · {signup.title}{alreadySignedSlotIds.has(signup.id) ? " · already signed in" : ""}
+              </option>
+            ))}
+          </select>
+          {!sessionSlots.length && <small>No {session.toLowerCase()} slots signed up for today.</small>}
+          {sessionSlots.length > 0 && <small>Tip: hold Command/Ctrl to select more than one on desktop. On mobile, tap the list to choose multiple.</small>}
         </label>
 
         <label className="inputGroup compactInput">
@@ -1821,10 +1997,10 @@ function StudentSignIn({ student, signups, signIns, addSignIn }) {
           />
         </label>
 
-        <button className="primaryBtn">Sign In</button>
+        <button className="primaryBtn">Sign In Selected Slots</button>
       </form>
 
-      {msg && <p className="successText">{msg}</p>}
+      {msg && <p className={msg.startsWith("Invalid") || msg.startsWith("Please") ? "errorText" : "successText"}>{msg}</p>}
     </div>
   );
 }
@@ -1881,7 +2057,7 @@ function StudentLogin({ students, setActiveStudentId, setPage }) {
   );
 }
 
-function ParentPortal({ setPage, students, hours, scheduleSlots, signups, messages, parentLogin, setParentLogin, addSignup, cancelSignup, emergencyContacts, setEmergencySaved, setAdminLoggedIn }) {
+function ParentPortal({ setPage, students, hours, scheduleSlots, signups, messages, tickets, parentLogin, setParentLogin, addSignup, cancelSignup, emergencyContacts, setEmergencySaved, createTicket, setAdminLoggedIn }) {
   if (!parentLogin) {
     return (
       <SimplePage title="Parent Portal Login" setPage={setPage}>
@@ -1905,12 +2081,14 @@ function ParentPortal({ setPage, students, hours, scheduleSlots, signups, messag
       cancelSignup={cancelSignup}
       emergencyContacts={emergencyContacts}
       setEmergencySaved={setEmergencySaved}
+      tickets={tickets.filter(t => t.senderType === "parent" && clean(t.parentEmail) === clean(parentLogin.parentEmail))}
+      createTicket={createTicket}
       logout={() => setParentLogin(null)}
     />
   );
 }
 
-function ParentShell({ setPage, parentEmail, children, hours, scheduleSlots, signups, messages, addSignup, cancelSignup, emergencyContacts, setEmergencySaved, logout }) {
+function ParentShell({ setPage, parentEmail, children, hours, scheduleSlots, signups, messages, tickets, addSignup, cancelSignup, emergencyContacts, setEmergencySaved, createTicket, logout }) {
   const [tab, setTabRaw] = useState(() => load("shhp_parent_tab_v30", "kids"));
   function setTab(nextTab) {
     setTabRaw(nextTab);
@@ -1920,6 +2098,7 @@ function ParentShell({ setPage, parentEmail, children, hours, scheduleSlots, sig
     ["kids", "View Kids"],
     ["tier", "Hour Tier"],
     ["emergency", "Emergency Contact / Notes"],
+    ["messages", "Message Admin"],
     ["pdf", "Printable PDF"],
   ];
 
@@ -1949,6 +2128,7 @@ function ParentShell({ setPage, parentEmail, children, hours, scheduleSlots, sig
           {tab === "kids" && <ParentViewKids children={children} hours={hours} signups={signups} cancelSignup={cancelSignup} setTab={setTab} />}
           {tab === "tier" && <ParentTier children={children} hours={hours} />}
           {tab === "emergency" && <ParentEmergency children={children} emergencyContacts={emergencyContacts} setEmergencySaved={setEmergencySaved} />}
+          {tab === "messages" && <ParentTickets parentEmail={parentEmail} children={children} tickets={tickets} createTicket={createTicket} />}
           {tab === "pdf" && <ParentPDF parentEmail={parentEmail} students={children} allStudents={children} hours={hours} />}
         </div>
       </main>
@@ -2160,7 +2340,7 @@ function AdminLoginMini({ setPage, setAdminLoggedIn }) {
   return <form className="loginCard adminMini" onSubmit={login}><h1>Admin Login</h1><InputText label="Username" value={u} setValue={setU} /><InputText label="Password" value={p} setValue={setP} password />{err && <p className="errorText">{err}</p>}<button className="primaryBtn">Log In</button></form>;
 }
 
-function AdminPortal({ setPage, adminLoggedIn, setAdminLoggedIn, students, hours, setHoursSaved, scheduleSlots, setScheduleSaved, signups, signIns, messages, certificateRequests, setCertificatesSaved, emergencyContacts, updateStudent, deleteStudent }) {
+function AdminPortal({ setPage, adminLoggedIn, setAdminLoggedIn, students, hours, setHoursSaved, scheduleSlots, setScheduleSaved, signups, signIns, messages, certificateRequests, setCertificatesSaved, emergencyContacts, tickets, updateStudent, deleteStudent, deleteSignupById, replyTicket, closeTicket, deleteTicket }) {
   const [tab, setTabRaw] = useState(() => load("shhp_admin_tab_v30", "home"));
   const [search, setSearch] = useState("");
 
@@ -2190,8 +2370,10 @@ function AdminPortal({ setPage, adminLoggedIn, setAdminLoggedIn, students, hours
     ["hours", "Approve Hours"],
     ["signups", "Slot Signups"],
     ["certificates", "Certificates"],
+    ["studentInbox", "Student Inbox"],
+    ["parentInbox", "Parent Inbox"],
     ["emergency", "Emergency Info"],
-    ["messages", "Inbox Log"],
+    ["messages", "System Log"],
   ];
 
   return (
@@ -2226,8 +2408,10 @@ function AdminPortal({ setPage, adminLoggedIn, setAdminLoggedIn, students, hours
         {tab === "pastCodes" && <AdminPastCodes />}
         {tab === "students" && <AdminStudents students={students.filter(s => `${s.id} ${s.firstName} ${s.lastName} ${s.parentEmail}`.toLowerCase().includes(search.toLowerCase()))} hours={hours} updateStudent={updateStudent} deleteStudent={deleteStudent} />}
         {tab === "hours" && <AdminHours hours={hours} students={students} search={search} approve={approve} reject={reject} />}
-        {tab === "signups" && <AdminSignups signups={signups} search={search} />}
+        {tab === "signups" && <AdminSignups signups={signups} search={search} deleteSignupById={deleteSignupById} />}
         {tab === "certificates" && <AdminCertificates requests={certificateRequests} students={students} hours={hours} markCertificate={markCertificate} />}
+        {tab === "studentInbox" && <AdminTickets title="Student Inbox" tickets={tickets.filter(t => t.senderType === "student")} search={search} replyTicket={replyTicket} closeTicket={closeTicket} deleteTicket={deleteTicket} />}
+        {tab === "parentInbox" && <AdminTickets title="Parent Inbox" tickets={tickets.filter(t => t.senderType === "parent")} search={search} replyTicket={replyTicket} closeTicket={closeTicket} deleteTicket={deleteTicket} />}
         {tab === "emergency" && <AdminEmergencyInfo students={students} emergencyContacts={emergencyContacts} search={search} />}
         {tab === "messages" && <AdminMessages messages={messages} />}
       </main>
@@ -2441,14 +2625,30 @@ function AdminHours({ hours, students, search, approve, reject }) {
   );
 }
 
-function AdminSignups({ signups, search }) {
+function AdminSignups({ signups, search, deleteSignupById }) {
   const [weekStart, setWeekStartRaw] = useState(() => load("shhp_admin_signup_week_v30", weekStartIso(today())));
   const [openCard, setOpenCard] = useState("");
+  const [openDay, setOpenDay] = useState("");
+  const [editDay, setEditDay] = useState("");
 
   function setWeekStart(nextWeekStart) {
     setWeekStartRaw(nextWeekStart);
     save("shhp_admin_signup_week_v30", nextWeekStart);
     setOpenCard("");
+    setOpenDay("");
+    setEditDay("");
+  }
+
+  function cancelSignupFromAdmin(signup) {
+    const ok = window.confirm(`Cancel ${signup.studentName}'s signup for ${signup.time} on ${dateLabel(signup.date)}?`);
+    if (!ok) return;
+    deleteSignupById(signup.id);
+  }
+
+  function cancelAllStudentSignups(studentGroup) {
+    const ok = window.confirm(`Cancel all ${studentGroup.signups.length} signup(s) for ${studentGroup.studentName}?`);
+    if (!ok) return;
+    studentGroup.signups.forEach((signup) => deleteSignupById(signup.id));
   }
 
   const weekDates = Array.from({ length: 7 }, (_, index) => addDaysIso(weekStart, index));
@@ -2478,7 +2678,8 @@ function AdminSignups({ signups, search }) {
     const group = signupsFor(date, sectionKey);
     const studentsInGroup = mergeStudentSignups(group);
     const key = cardKey(date, sectionKey);
-    const isOpen = openCard === key;
+    const isOpen = openCard === key || openDay === date;
+    const isEditing = editDay === date;
 
     return (
       <div className={`signupFaceCard ${sectionKey}SignupCard`}>
@@ -2499,7 +2700,7 @@ function AdminSignups({ signups, search }) {
           className="secondaryBtn smallBtn inlineBtn"
           type="button"
           disabled={!group.length}
-          onClick={() => setOpenCard(isOpen ? "" : key)}
+          onClick={() => setOpenCard(isOpen && openDay !== date ? "" : key)}
         >
           {isOpen ? "Hide Students" : "View Students"}
         </button>
@@ -2508,16 +2709,31 @@ function AdminSignups({ signups, search }) {
           <div className="signupStudentList">
             {studentsInGroup.map((student) => (
               <div className="signupStudentRow" key={student.studentId || student.studentName}>
-                <div>
-                  <b>{student.studentName}</b>
-                  <p>ID: {student.studentId || "Not available"}</p>
-                  <small>
-                    Slots: {student.signups
-                      .sort((a, b) => String(a.time).localeCompare(String(b.time)))
-                      .map((signup) => `${signup.time} — ${signup.title}`)
-                      .join(" | ")}
-                  </small>
+                <div className="signupStudentSummary">
+                  <div>
+                    <b>{student.studentName}</b>
+                    <p>ID: {student.studentId || "Not available"}</p>
+                    <small>{compactSignupRange(student.signups)}</small>
+                  </div>
+                  {isEditing && (
+                    <button className="dangerBtn smallBtn inlineBtn" type="button" onClick={() => cancelAllStudentSignups(student)}>
+                      Cancel All
+                    </button>
+                  )}
                 </div>
+
+                {isEditing && (
+                  <div className="adminSlotCancelList">
+                    {student.signups
+                      .sort((a, b) => String(a.time).localeCompare(String(b.time)))
+                      .map((signup) => (
+                        <div className="adminSlotCancelRow" key={signup.id}>
+                          <span>{signup.time} · {signup.title}</span>
+                          <button className="dangerBtn smallBtn inlineBtn" type="button" onClick={() => cancelSignupFromAdmin(signup)}>Cancel</button>
+                        </div>
+                      ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -2531,7 +2747,7 @@ function AdminSignups({ signups, search }) {
       <div className="signupWeekHeader">
         <div>
           <h2>Slot Signups — Week View</h2>
-          <p>Students are merged inside each Morning, Evening, or Special Events card, so one student does not clutter the list if they selected multiple slots.</p>
+          <p>Each day has Morning, Evening, and Special Event cards. Students are merged, so one student shows once with a simple time range like 5:30 PM - 9:30 PM (3 slots).</p>
         </div>
         <div className="weekControls">
           <button className="secondaryBtn smallBtn inlineBtn" type="button" onClick={() => setWeekStart(addDaysIso(weekStart, -7))}>Previous Week</button>
@@ -2542,16 +2758,36 @@ function AdminSignups({ signups, search }) {
 
       <div className="weekRangePill">{dateLabel(weekStart)} - {dateLabel(weekEnd)}</div>
 
-      {weekDates.map((date) => (
-        <div className="signupDayBlock" key={date}>
-          <h3>{dateLabel(date)}</h3>
-          <div className="signupFaceGrid">
-            {sectionConfig.map(([sectionKey, title, subtitle]) => (
-              <WeekSignupCard key={`${date}-${sectionKey}`} date={date} sectionKey={sectionKey} title={title} subtitle={subtitle} />
-            ))}
+      {weekDates.map((date) => {
+        const dayTotal = filtered.filter((signup) => signup.date === date).length;
+        const dayOpen = openDay === date;
+        const dayEditing = editDay === date;
+
+        return (
+          <div className="signupDayBlock" key={date}>
+            <div className="signupDayHeader">
+              <div>
+                <h3>{dateLabel(date)}</h3>
+                <p>{dayTotal} total signup{dayTotal === 1 ? "" : "s"} for this day</p>
+              </div>
+              <div className="dayActionButtons">
+                <button className="secondaryBtn smallBtn inlineBtn" disabled={!dayTotal} type="button" onClick={() => setOpenDay(dayOpen ? "" : date)}>
+                  {dayOpen ? "Hide Day" : "View Day"}
+                </button>
+                <button className="secondaryBtn smallBtn inlineBtn" disabled={!dayTotal} type="button" onClick={() => { setEditDay(dayEditing ? "" : date); setOpenDay(date); }}>
+                  {dayEditing ? "Done Editing" : "Edit / Cancel"}
+                </button>
+              </div>
+            </div>
+
+            <div className="signupFaceGrid">
+              {sectionConfig.map(([sectionKey, title, subtitle]) => (
+                <WeekSignupCard key={`${date}-${sectionKey}`} date={date} sectionKey={sectionKey} title={title} subtitle={subtitle} />
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -2677,6 +2913,183 @@ function CertificateTab({ student, stats, certificateRequests, addCertificateReq
           <p>No approved certificate is available yet. Once admin approves your request, preview and print buttons will appear here.</p>
         )}
       </section>
+    </div>
+  );
+}
+
+function TicketStatusBadge({ status }) {
+  const normalized = String(status || "Open").toLowerCase();
+  return <span className={"statusBadge " + (normalized === "closed" ? "rejected" : normalized === "replied" ? "approved" : "pending")}>{status || "Open"}</span>;
+}
+
+function TicketList({ tickets }) {
+  return (
+    <div className="ticketList">
+      {tickets.length ? tickets.map((ticket) => (
+        <div className="ticketCard" key={ticket.id}>
+          <div className="ticketHeader">
+            <div>
+              <b>Ticket #{ticket.ticketNumber}</b>
+              <p>{ticket.title}</p>
+            </div>
+            <TicketStatusBadge status={ticket.status} />
+          </div>
+          <p className="ticketBody">{ticket.body}</p>
+          <small>Created: {ticket.createdAt}</small>
+          {ticket.replies?.length ? (
+            <div className="ticketReplies">
+              <b>Admin Replies</b>
+              {ticket.replies.map((reply, index) => (
+                <p key={`${ticket.id}-reply-${index}`}><b>{reply.from}:</b> {reply.body} <small>{reply.createdAt}</small></p>
+              ))}
+            </div>
+          ) : <p className="smallMuted">No admin reply yet.</p>}
+        </div>
+      )) : <p>No messages yet.</p>}
+    </div>
+  );
+}
+
+function StudentTickets({ student, tickets, createTicket }) {
+  const [createdTicket, setCreatedTicket] = useState(null);
+
+  function submit(e) {
+    e.preventDefault();
+    const f = new FormData(e.currentTarget);
+    const ticket = createTicket({
+      senderType: "student",
+      studentId: student.id,
+      studentName: `${student.firstName} ${student.lastName}`,
+      parentEmail: student.parentEmail,
+      title: f.get("title"),
+      body: f.get("body"),
+    });
+    setCreatedTicket(ticket);
+    e.currentTarget.reset();
+  }
+
+  return (
+    <div className="studentPanel ticketPanel">
+      <h2>Message Admin</h2>
+      <p>Send a question to the volunteer coordinator. You will receive a ticket number for tracking.</p>
+
+      <form className="ticketForm" onSubmit={submit}>
+        <Input name="title" label="Subject" required />
+        <label className="inputGroup">
+          <span>Message <b>*</b></span>
+          <textarea name="body" required placeholder="Write your question here..." />
+        </label>
+        <button className="primaryBtn smallBtn">Send Message</button>
+      </form>
+
+      {createdTicket && <p className="successText">Message sent. Your ticket number is #{createdTicket.ticketNumber}.</p>}
+
+      <h3>Your Tickets</h3>
+      <TicketList tickets={tickets} />
+    </div>
+  );
+}
+
+function ParentTickets({ parentEmail, children, tickets, createTicket }) {
+  const [createdTicket, setCreatedTicket] = useState(null);
+
+  function submit(e) {
+    e.preventDefault();
+    const f = new FormData(e.currentTarget);
+    const childId = f.get("studentId");
+    const child = children.find((item) => item.id === childId);
+    const ticket = createTicket({
+      senderType: "parent",
+      studentId: child?.id || "",
+      studentName: child ? `${child.firstName} ${child.lastName}` : "",
+      parentEmail,
+      title: f.get("title"),
+      body: f.get("body"),
+    });
+    setCreatedTicket(ticket);
+    e.currentTarget.reset();
+  }
+
+  return (
+    <div className="studentPanel ticketPanel">
+      <h2>Message Admin</h2>
+      <p>Parents can message the volunteer coordinator about schedules, hours, emergency notes, or certificates.</p>
+
+      <form className="ticketForm" onSubmit={submit}>
+        <label className="inputGroup">
+          <span>Student</span>
+          <select name="studentId">
+            <option value="">General parent question</option>
+            {children.map((child) => <option key={child.id} value={child.id}>{child.firstName} {child.lastName} · {child.id}</option>)}
+          </select>
+        </label>
+        <Input name="title" label="Subject" required />
+        <label className="inputGroup">
+          <span>Message <b>*</b></span>
+          <textarea name="body" required placeholder="Write your question here..." />
+        </label>
+        <button className="primaryBtn smallBtn">Send Message</button>
+      </form>
+
+      {createdTicket && <p className="successText">Message sent. Your ticket number is #{createdTicket.ticketNumber}.</p>}
+
+      <h3>Your Tickets</h3>
+      <TicketList tickets={tickets} />
+    </div>
+  );
+}
+
+function AdminTickets({ title, tickets, search, replyTicket, closeTicket, deleteTicket }) {
+  const [replyDrafts, setReplyDrafts] = useState({});
+
+  const filtered = tickets.filter((ticket) => `${ticket.ticketNumber} ${ticket.senderType} ${ticket.studentName} ${ticket.studentId} ${ticket.parentEmail} ${ticket.title} ${ticket.body} ${ticket.status}`.toLowerCase().includes(search.toLowerCase()));
+
+  function sendReply(ticket) {
+    const body = (replyDrafts[ticket.id] || "").trim();
+    if (!body) return alert("Please write a reply first.");
+    replyTicket(ticket.id, body);
+    setReplyDrafts({ ...replyDrafts, [ticket.id]: "" });
+  }
+
+  return (
+    <div className="dashCard adminWide ticketAdminPanel">
+      <h2>{title}</h2>
+      <p className="kidHelpText">Reply to tickets, close resolved tickets, or delete old/test tickets.</p>
+
+      {filtered.length ? filtered.map((ticket) => (
+        <div className="adminTicketCard" key={ticket.id}>
+          <div className="ticketHeader">
+            <div>
+              <b>Ticket #{ticket.ticketNumber}: {ticket.title}</b>
+              <p>{ticket.studentName || "General"} · ID: {ticket.studentId || "N/A"} · Parent: {ticket.parentEmail || "N/A"}</p>
+              <small>Created: {ticket.createdAt}</small>
+            </div>
+            <TicketStatusBadge status={ticket.status} />
+          </div>
+
+          <p className="ticketBody">{ticket.body}</p>
+
+          {ticket.replies?.length ? (
+            <div className="ticketReplies">
+              <b>Replies</b>
+              {ticket.replies.map((reply, index) => (
+                <p key={`${ticket.id}-admin-reply-${index}`}><b>{reply.from}:</b> {reply.body} <small>{reply.createdAt}</small></p>
+              ))}
+            </div>
+          ) : null}
+
+          <label className="inputGroup">
+            <span>Admin Reply</span>
+            <textarea value={replyDrafts[ticket.id] || ""} onChange={(e) => setReplyDrafts({ ...replyDrafts, [ticket.id]: e.target.value })} placeholder="Write reply..." />
+          </label>
+
+          <div className="buttonRow">
+            <button className="primaryBtn smallBtn" type="button" onClick={() => sendReply(ticket)}>Reply</button>
+            <button className="secondaryBtn smallBtn inlineBtn" type="button" onClick={() => closeTicket(ticket.id)}>Close Ticket</button>
+            <button className="dangerBtn smallBtn inlineBtn" type="button" onClick={() => { if (window.confirm(`Delete ticket #${ticket.ticketNumber}?`)) deleteTicket(ticket.id); }}>Delete</button>
+          </div>
+        </div>
+      )) : <p>No tickets found.</p>}
     </div>
   );
 }

@@ -2087,3 +2087,160 @@ video {
     max-width: none !important;
   }
 }
+
+
+/* V31 sign-in multi-select, simplified admin signups, and support tickets */
+.multiSelectSlots {
+  min-height: 140px;
+}
+
+.signupDayHeader,
+.signupStudentSummary,
+.adminSlotCancelRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.signupDayHeader {
+  margin-bottom: 14px;
+}
+
+.signupDayHeader h3 {
+  margin-bottom: 4px;
+}
+
+.signupDayHeader p {
+  margin: 0;
+  color: #6d625e;
+  font-weight: 800;
+}
+
+.dayActionButtons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.signupStudentSummary small {
+  display: block;
+  font-size: 16px;
+  color: #24130f;
+  font-weight: 900;
+}
+
+.adminSlotCancelList {
+  margin-top: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.adminSlotCancelRow {
+  border: 1px dashed #f1b36b;
+  background: white;
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.adminSlotCancelRow span {
+  font-weight: 800;
+  color: #24130f;
+}
+
+.ticketPanel h3 {
+  margin-top: 24px;
+  color: #8a0b18;
+}
+
+.ticketForm textarea,
+.ticketAdminPanel textarea,
+.inputGroup textarea {
+  width: 100%;
+  min-height: 110px;
+  border: 1px solid #d8c2ab;
+  border-radius: 10px;
+  padding: 14px;
+  font-size: 16px;
+  font-family: inherit;
+  background: white;
+}
+
+.ticketList,
+.ticketReplies {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.ticketCard,
+.adminTicketCard {
+  border: 1px solid #f1d0a5;
+  background: #fff8ed;
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.adminTicketCard {
+  margin-bottom: 16px;
+}
+
+.ticketHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.ticketHeader b {
+  color: #24130f;
+  font-size: 18px;
+}
+
+.ticketHeader p,
+.ticketBody {
+  margin: 7px 0;
+}
+
+.ticketBody {
+  color: #24130f;
+  line-height: 1.45;
+}
+
+.ticketReplies {
+  background: white;
+  border: 1px solid #f1d0a5;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.ticketReplies p {
+  margin: 6px 0;
+}
+
+@media (max-width: 820px) {
+  .signupDayHeader,
+  .signupStudentSummary,
+  .adminSlotCancelRow,
+  .ticketHeader {
+    display: block;
+  }
+
+  .dayActionButtons {
+    display: grid;
+    grid-template-columns: 1fr;
+    margin-top: 12px;
+  }
+
+  .dayActionButtons button,
+  .adminSlotCancelRow button {
+    width: 100% !important;
+    max-width: none !important;
+    margin-top: 8px !important;
+  }
+
+  .multiSelectSlots {
+    min-height: 170px;
+  }
+}
