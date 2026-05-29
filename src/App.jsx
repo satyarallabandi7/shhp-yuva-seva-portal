@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import "./App.css";
 
-const BUILD_MARKER = "SHHP_SIGNUP_SAVE_CERTIFICATES_V29";
+const BUILD_MARKER = "SHHP_PERSIST_TABS_WEEKLY_SIGNUPS_V30";
 const ADMIN_USERNAME = "shhp.admin";
 const ADMIN_PASSWORD = "$winis1971!";
 
@@ -1000,6 +1000,52 @@ function openCertificatePreview({ student, stats, request, print = false }) {
   }
 }
 
+function dateToIso(date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function addDaysIso(dateValue, daysToAdd) {
+  const date = new Date(dateValue + "T00:00:00");
+  date.setDate(date.getDate() + daysToAdd);
+  return dateToIso(date);
+}
+
+function weekStartIso(dateValue) {
+  const date = new Date(dateValue + "T00:00:00");
+  const day = date.getDay();
+  date.setDate(date.getDate() - day);
+  return dateToIso(date);
+}
+
+function signupSection(signup) {
+  const category = String(signup.category || "").toLowerCase();
+  const haystack = `${signup.title || ""} ${signup.time || ""}`.toLowerCase();
+
+  if (category === "regular morning" || (category.includes("morning") && category.includes("regular"))) return "morning";
+  if (category === "regular evening" || (category.includes("evening") && category.includes("regular"))) return "evening";
+  if (!category && (haystack.includes("morning") || haystack.includes("am"))) return "morning";
+  if (!category && (haystack.includes("evening") || haystack.includes("pm"))) return "evening";
+  return "special";
+}
+
+function mergeStudentSignups(signupsForSection) {
+  const map = new Map();
+
+  signupsForSection.forEach((signup) => {
+    const key = signup.studentId || signup.studentName || signup.id;
+    const existing = map.get(key) || {
+      studentId: signup.studentId,
+      studentName: signup.studentName || "Unknown Student",
+      signups: [],
+    };
+
+    existing.signups.push(signup);
+    map.set(key, existing);
+  });
+
+  return Array.from(map.values()).sort((a, b) => a.studentName.localeCompare(b.studentName));
+}
+
 export default function App() {
   const [page, setPage] = useState(() => pageFromUrl());
   const [students, setStudents] = useState(() => load("shhp_students", demoStudents));
@@ -1537,7 +1583,11 @@ function StudentPortal({ setPage, students, hours, scheduleSlots, signups, signI
 }
 
 function StudentShell({ setPage, student, hours, scheduleSlots, signups, allSignups, signIns, messages, certificateRequests, addSignup, cancelSignup, addHours, addSignIn, addCertificateRequest, logout }) {
-  const [tab, setTab] = useState("home");
+  const [tab, setTabRaw] = useState(() => load(`shhp_student_tab_v30_${student.id}`, "home"));
+  function setTab(nextTab) {
+    setTabRaw(nextTab);
+    save(`shhp_student_tab_v30_${student.id}`, nextTab);
+  }
   const stats = statsFor(student.id, hours);
   const tabs = [["home", "Home"], ["schedule", "Sign Up / Schedule Slots"], ["signin", "Sign In"], ["submit", "Submit Hours"], ["approved", "Approved Hours"], ["tier", "Current Tier"], ["certificate", "Certificate"], ["contact", "Contact Us"]];
   return <div className="studentPortalPage"><div className="studentPortalTop"><div><h1>Student Portal</h1><p>{student.firstName} {student.lastName} · ID {student.id}</p></div><div className="studentTopActions"><button className="logoutBtn" onClick={() => setPage("home")}>Home</button><button className="logoutBtn" onClick={logout}>Log Out</button></div></div><div className="studentTabs">{tabs.map(([key, label]) => <button key={key} className={tab === key ? "activeStudentTab" : ""} onClick={() => setTab(key)}>{label}</button>)}</div><main className="studentPortalContent"><div className="studentTabStack">{tab === "home" && <StudentHome student={student} signups={signups} cancelSignup={cancelSignup} setTab={setTab} />}{tab === "schedule" && <StudentSchedule student={student} scheduleSlots={scheduleSlots} signups={signups} allSignups={allSignups} addSignup={addSignup} setTab={setTab} />}{tab === "signin" && <StudentSignIn student={student} signups={signups} signIns={signIns} addSignIn={addSignIn} />}{tab === "submit" && <SubmitHours student={student} addHours={addHours} />}{tab === "approved" && <ApprovedHours hours={hours.filter(h => h.studentId === student.id)} />}{tab === "tier" && <CurrentTier stats={stats} />}{tab === "certificate" && <CertificateTab student={student} stats={stats} certificateRequests={certificateRequests} addCertificateRequest={addCertificateRequest} />}{tab === "contact" && <ContactBox />}</div></main></div>;
@@ -1861,7 +1911,11 @@ function ParentPortal({ setPage, students, hours, scheduleSlots, signups, messag
 }
 
 function ParentShell({ setPage, parentEmail, children, hours, scheduleSlots, signups, messages, addSignup, cancelSignup, emergencyContacts, setEmergencySaved, logout }) {
-  const [tab, setTab] = useState("kids");
+  const [tab, setTabRaw] = useState(() => load("shhp_parent_tab_v30", "kids"));
+  function setTab(nextTab) {
+    setTabRaw(nextTab);
+    save("shhp_parent_tab_v30", nextTab);
+  }
   const tabs = [
     ["kids", "View Kids"],
     ["tier", "Hour Tier"],
@@ -2107,8 +2161,13 @@ function AdminLoginMini({ setPage, setAdminLoggedIn }) {
 }
 
 function AdminPortal({ setPage, adminLoggedIn, setAdminLoggedIn, students, hours, setHoursSaved, scheduleSlots, setScheduleSaved, signups, signIns, messages, certificateRequests, setCertificatesSaved, emergencyContacts, updateStudent, deleteStudent }) {
-  const [tab, setTab] = useState("home");
+  const [tab, setTabRaw] = useState(() => load("shhp_admin_tab_v30", "home"));
   const [search, setSearch] = useState("");
+
+  function setTab(nextTab) {
+    setTabRaw(nextTab);
+    save("shhp_admin_tab_v30", nextTab);
+  }
 
   if (!adminLoggedIn) {
     return (
@@ -2382,7 +2441,121 @@ function AdminHours({ hours, students, search, approve, reject }) {
   );
 }
 
-function AdminSignups({ signups, search }) { const filtered = signups.filter(s => `${s.studentName} ${s.title} ${s.date} ${s.time}`.toLowerCase().includes(search.toLowerCase())); return <div className="dashCard adminWide"><h2>Slot Signups</h2>{filtered.length ? filtered.map(s => <div className="historyItem" key={s.id}><div><b>{s.studentName}</b><p>{s.title} · {s.date} · {s.time}</p><p>{s.category}</p></div></div>) : <p>No slot signups.</p>}</div>; }
+function AdminSignups({ signups, search }) {
+  const [weekStart, setWeekStartRaw] = useState(() => load("shhp_admin_signup_week_v30", weekStartIso(today())));
+  const [openCard, setOpenCard] = useState("");
+
+  function setWeekStart(nextWeekStart) {
+    setWeekStartRaw(nextWeekStart);
+    save("shhp_admin_signup_week_v30", nextWeekStart);
+    setOpenCard("");
+  }
+
+  const weekDates = Array.from({ length: 7 }, (_, index) => addDaysIso(weekStart, index));
+  const weekEnd = weekDates[6];
+
+  const filtered = signups.filter((signup) => {
+    const inWeek = signup.date >= weekStart && signup.date <= weekEnd;
+    const matchesSearch = `${signup.studentName} ${signup.studentId} ${signup.title} ${signup.date} ${signup.time} ${signup.category}`.toLowerCase().includes(search.toLowerCase());
+    return inWeek && matchesSearch;
+  });
+
+  const sectionConfig = [
+    ["morning", "Morning", "Regular morning seva slots"],
+    ["evening", "Evening", "Regular evening seva slots"],
+    ["special", "Special Events / Poojas", "Poojas and special seva events"],
+  ];
+
+  function signupsFor(date, sectionKey) {
+    return filtered.filter((signup) => signup.date === date && signupSection(signup) === sectionKey);
+  }
+
+  function cardKey(date, sectionKey) {
+    return `${date}-${sectionKey}`;
+  }
+
+  function WeekSignupCard({ date, sectionKey, title, subtitle }) {
+    const group = signupsFor(date, sectionKey);
+    const studentsInGroup = mergeStudentSignups(group);
+    const key = cardKey(date, sectionKey);
+    const isOpen = openCard === key;
+
+    return (
+      <div className={`signupFaceCard ${sectionKey}SignupCard`}>
+        <div className="signupFaceHeader">
+          <div>
+            <h4>{title}</h4>
+            <p>{subtitle}</p>
+          </div>
+          <div className="signupCountBadge">
+            <b>{studentsInGroup.length}</b>
+            <span>{studentsInGroup.length === 1 ? "student" : "students"}</span>
+          </div>
+        </div>
+
+        <p className="signupSlotCount">{group.length} total slot signup{group.length === 1 ? "" : "s"}</p>
+
+        <button
+          className="secondaryBtn smallBtn inlineBtn"
+          type="button"
+          disabled={!group.length}
+          onClick={() => setOpenCard(isOpen ? "" : key)}
+        >
+          {isOpen ? "Hide Students" : "View Students"}
+        </button>
+
+        {isOpen && (
+          <div className="signupStudentList">
+            {studentsInGroup.map((student) => (
+              <div className="signupStudentRow" key={student.studentId || student.studentName}>
+                <div>
+                  <b>{student.studentName}</b>
+                  <p>ID: {student.studentId || "Not available"}</p>
+                  <small>
+                    Slots: {student.signups
+                      .sort((a, b) => String(a.time).localeCompare(String(b.time)))
+                      .map((signup) => `${signup.time} — ${signup.title}`)
+                      .join(" | ")}
+                  </small>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="dashCard adminWide weeklySignupDashboard">
+      <div className="signupWeekHeader">
+        <div>
+          <h2>Slot Signups — Week View</h2>
+          <p>Students are merged inside each Morning, Evening, or Special Events card, so one student does not clutter the list if they selected multiple slots.</p>
+        </div>
+        <div className="weekControls">
+          <button className="secondaryBtn smallBtn inlineBtn" type="button" onClick={() => setWeekStart(addDaysIso(weekStart, -7))}>Previous Week</button>
+          <button className="secondaryBtn smallBtn inlineBtn" type="button" onClick={() => setWeekStart(weekStartIso(today()))}>This Week</button>
+          <button className="secondaryBtn smallBtn inlineBtn" type="button" onClick={() => setWeekStart(addDaysIso(weekStart, 7))}>Next Week</button>
+        </div>
+      </div>
+
+      <div className="weekRangePill">{dateLabel(weekStart)} - {dateLabel(weekEnd)}</div>
+
+      {weekDates.map((date) => (
+        <div className="signupDayBlock" key={date}>
+          <h3>{dateLabel(date)}</h3>
+          <div className="signupFaceGrid">
+            {sectionConfig.map(([sectionKey, title, subtitle]) => (
+              <WeekSignupCard key={`${date}-${sectionKey}`} date={date} sectionKey={sectionKey} title={title} subtitle={subtitle} />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function AdminSignIns({ signIns, search }) { const filtered = signIns.filter(s => `${s.studentName} ${s.studentId} ${s.date} ${s.session}`.toLowerCase().includes(search.toLowerCase())); return <div className="dashCard adminWide"><h2>Student Sign-Ins</h2>{filtered.length ? filtered.map(s => <div className="historyItem" key={s.id}><div><b>{s.studentName}</b><p>{s.date} · {s.session} · {s.time}</p><p>ID: {s.studentId}</p></div><span className="statusBadge approved">Signed In</span></div>) : <p>No sign-ins yet.</p>}</div>; }
 function AdminCertificates({ requests, students, hours, markCertificate }) {
   function studentForRequest(request) {
