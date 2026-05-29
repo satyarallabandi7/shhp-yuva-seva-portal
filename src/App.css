@@ -1741,3 +1741,89 @@ video {
     padding: 7px 10px;
   }
 }
+
+
+/* V28 admin student card actions */
+.adminStudentMiniCard {
+  align-items: stretch;
+}
+
+.studentMiniTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  width: 100%;
+}
+
+.studentMiniTop b {
+  font-size: 20px;
+  color: #24130f;
+}
+
+.studentMiniTop p {
+  margin: 6px 0 0;
+  color: #6d625e;
+  font-weight: 900;
+}
+
+.studentActionButtons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.dangerBtn {
+  border: none;
+  background: #fee2e2;
+  color: #991b1b;
+  border-radius: 10px;
+  padding: 13px 22px;
+  font-weight: 900;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.studentDetailPanel,
+.studentEditPanel {
+  margin-top: 16px;
+  padding: 18px;
+  border-radius: 16px;
+  border: 1px solid #f1d0a5;
+  background: #fff8ed;
+  width: 100%;
+}
+
+.studentDetailPanel p {
+  margin: 8px 0;
+}
+
+.studentEditPanel .buttonRow {
+  justify-content: flex-start;
+}
+
+@media (max-width: 820px) {
+  .studentMiniTop {
+    display: block;
+  }
+
+  .studentActionButtons {
+    justify-content: stretch;
+    display: grid;
+    grid-template-columns: 1fr;
+    margin-top: 12px;
+  }
+
+  .studentActionButtons .smallBtn,
+  .studentActionButtons .dangerBtn {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+  }
+
+  .studentDetailPanel,
+  .studentEditPanel {
+    padding: 14px;
+  }
+}

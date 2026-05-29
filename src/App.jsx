@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import "./App.css";
 
-const BUILD_MARKER = "SHHP_SUPABASE_SHARED_DB_V26";
+const BUILD_MARKER = "SHHP_ADMIN_STUDENT_ACTIONS_V28";
 const ADMIN_USERNAME = "shhp.admin";
 const ADMIN_PASSWORD = "$winis1971!";
 
@@ -100,6 +100,15 @@ async function sbDeleteById(table, id) {
   return sbRequest(table, {
     method: "DELETE",
     query: `?id=eq.${encodeURIComponent(id)}`,
+    prefer: "return=minimal",
+  });
+}
+
+async function sbDeleteWhere(table, column, value) {
+  if (!column || value === undefined || value === null) return [];
+  return sbRequest(table, {
+    method: "DELETE",
+    query: `?${column}=eq.${encodeURIComponent(value)}`,
     prefer: "return=minimal",
   });
 }
@@ -617,6 +626,17 @@ function generateDefaultSchedule() {
   return slots;
 }
 
+function slotMergeKey(slot) {
+  return `${slot.date}|${slot.start}|${slot.end}|${slot.title}`;
+}
+
+function mergeScheduleSlots(defaultSlots, databaseSlots) {
+  const merged = new Map();
+  defaultSlots.forEach((slot) => merged.set(slotMergeKey(slot), slot));
+  databaseSlots.forEach((slot) => merged.set(slotMergeKey(slot), slot));
+  return Array.from(merged.values()).sort((a, b) => `${a.date}-${a.start}`.localeCompare(`${b.date}-${b.start}`));
+}
+
 function printReport(parentEmail, students, hours) {
   const linked = students.filter((s) => clean(s.parentEmail) === clean(parentEmail));
   const rows = linked.flatMap((student) =>
@@ -759,7 +779,9 @@ export default function App() {
         if (!alive) return;
 
         const nextStudents = studentRows.map(studentFromDb);
-        const nextSlots = slotRows.map(slotFromDb);
+        const defaultSlots = generateDefaultSchedule();
+        const databaseSlots = slotRows.map(slotFromDb);
+        const nextSlots = mergeScheduleSlots(defaultSlots, databaseSlots);
         const nextSignups = signupRows.map(signupFromDb);
         const nextSignIns = signinRows.map(signinFromDb);
         const nextHours = hourRows.map(hourFromDb);
@@ -768,7 +790,7 @@ export default function App() {
         const nextMessages = messageRows.map(messageFromDb);
 
         setStudents(nextStudents);
-        setScheduleSlots(nextSlots.length ? nextSlots : generateDefaultSchedule());
+        setScheduleSlots(nextSlots);
         setSignups(nextSignups);
         setSignIns(nextSignIns);
         setHours(nextHours);
@@ -777,7 +799,7 @@ export default function App() {
         setMessages(nextMessages);
 
         saveLocal("shhp_students", nextStudents);
-        saveLocal("shhp_schedule_slots_v11", nextSlots.length ? nextSlots : generateDefaultSchedule());
+        saveLocal("shhp_schedule_slots_v11", nextSlots);
         saveLocal("shhp_signups_v11", nextSignups);
         saveLocal("shhp_signins_v11", nextSignIns);
         saveLocal("shhp_hours", nextHours);
@@ -785,10 +807,15 @@ export default function App() {
         saveLocal("shhp_emergency_contacts_v12", nextEmergency);
         saveLocal("shhp_messages", nextMessages);
 
-        setDbStatus("Shared database connected");
+        setDbStatus(databaseSlots.length ? "Shared database connected" : "Shared database connected — using default schedule");
       } catch (error) {
         console.error(error);
-        if (alive) setDbStatus("Database connection failed — using this browser only");
+        if (alive) {
+          const defaultSlots = generateDefaultSchedule();
+          setScheduleSlots(defaultSlots);
+          saveLocal("shhp_schedule_slots_v11", defaultSlots);
+          setDbStatus("Database connection failed — showing default schedule only");
+        }
       }
     }
 
@@ -856,6 +883,51 @@ export default function App() {
     ]);
 
     return student;
+  }
+
+  function updateStudent(updatedStudent) {
+    const cleanedStudent = { ...updatedStudent, parentEmail: clean(updatedStudent.parentEmail) };
+    const nextStudents = students.map((student) => student.id === cleanedStudent.id ? cleanedStudent : student);
+    setStudents(nextStudents);
+    save("shhp_students", nextStudents);
+    sbUpsert("students", [studentToDb(cleanedStudent)]).catch((error) => console.error(error));
+    setDbStatus("Shared database connected — student updated");
+  }
+
+  function deleteStudent(studentId) {
+    const student = students.find((item) => item.id === studentId);
+    const nextStudents = students.filter((item) => item.id !== studentId);
+    const nextHours = hours.filter((item) => item.studentId !== studentId);
+    const nextSignups = signups.filter((item) => item.studentId !== studentId);
+    const nextSignIns = signIns.filter((item) => item.studentId !== studentId);
+    const nextMessages = messages.filter((item) => item.studentId !== studentId);
+    const nextCertificates = certificateRequests.filter((item) => item.studentId !== studentId);
+    const nextEmergency = { ...emergencyContacts };
+    delete nextEmergency[studentId];
+
+    setStudents(nextStudents);
+    setHours(nextHours);
+    setSignups(nextSignups);
+    setSignIns(nextSignIns);
+    setMessages(nextMessages);
+    setCertificateRequests(nextCertificates);
+    setEmergencyContacts(nextEmergency);
+
+    save("shhp_students", nextStudents);
+    save("shhp_hours", nextHours);
+    save("shhp_signups_v11", nextSignups);
+    save("shhp_signins_v11", nextSignIns);
+    save("shhp_messages", nextMessages);
+    save("shhp_certificate_requests", nextCertificates);
+    save("shhp_emergency_contacts_v12", nextEmergency);
+
+    sbDeleteById("students", studentId).catch((error) => console.error(error));
+    sbDeleteWhere("messages", "student_id", studentId).catch((error) => console.error(error));
+
+    if (activeStudentId === studentId) setActiveStudentIdSaved("");
+    if (parentLogin?.studentId === studentId) setParentLoginSaved(null);
+
+    setDbStatus(student ? `Shared database connected — deleted ${student.firstName} ${student.lastName}` : "Shared database connected — student deleted");
   }
 
   function addSignup(student, slotOrSlots) {
@@ -994,7 +1066,7 @@ export default function App() {
     {currentPage === "apply" && <Apply setPage={setPageSaved} addStudent={addStudent} />}
     {currentPage === "student" && <StudentPortal setPage={setPageSaved} students={students} hours={hours} scheduleSlots={scheduleSlots} signups={signups} signIns={signIns} messages={messages} activeStudentId={activeStudentId} setActiveStudentId={setActiveStudentIdSaved} addSignup={addSignup} cancelSignup={cancelSignup} addHours={addHours} addSignIn={addSignIn} addCertificateRequest={addCertificateRequest} setAdminLoggedIn={setAdminLoggedInSaved} />}
     {currentPage === "parent" && <ParentPortal setPage={setPageSaved} students={students} hours={hours} scheduleSlots={scheduleSlots} signups={signups} messages={messages} parentLogin={parentLogin} setParentLogin={setParentLoginSaved} addSignup={addSignup} cancelSignup={cancelSignup} emergencyContacts={emergencyContacts} setEmergencySaved={setEmergencySaved} setAdminLoggedIn={setAdminLoggedInSaved} />}
-    {currentPage === "admin" && <AdminPortal setPage={setPageSaved} adminLoggedIn={adminLoggedIn} setAdminLoggedIn={setAdminLoggedInSaved} students={students} hours={hours} setHoursSaved={setHoursSaved} scheduleSlots={scheduleSlots} setScheduleSaved={setScheduleSaved} signups={signups} signIns={signIns} messages={messages} certificateRequests={certificateRequests} setCertificatesSaved={setCertificatesSaved} emergencyContacts={emergencyContacts} />}
+    {currentPage === "admin" && <AdminPortal setPage={setPageSaved} adminLoggedIn={adminLoggedIn} setAdminLoggedIn={setAdminLoggedInSaved} students={students} hours={hours} setHoursSaved={setHoursSaved} scheduleSlots={scheduleSlots} setScheduleSaved={setScheduleSaved} signups={signups} signIns={signIns} messages={messages} certificateRequests={certificateRequests} setCertificatesSaved={setCertificatesSaved} emergencyContacts={emergencyContacts} updateStudent={updateStudent} deleteStudent={deleteStudent} />}
     {currentPage === "about" && <AboutPage setPage={setPageSaved} />}
     {currentPage === "why" && <WhyJoinPage setPage={setPageSaved} />}
     {currentPage === "tier" && <TierPage setPage={setPageSaved} />}
@@ -1736,7 +1808,7 @@ function AdminLoginMini({ setPage, setAdminLoggedIn }) {
   return <form className="loginCard adminMini" onSubmit={login}><h1>Admin Login</h1><InputText label="Username" value={u} setValue={setU} /><InputText label="Password" value={p} setValue={setP} password />{err && <p className="errorText">{err}</p>}<button className="primaryBtn">Log In</button></form>;
 }
 
-function AdminPortal({ setPage, adminLoggedIn, setAdminLoggedIn, students, hours, setHoursSaved, scheduleSlots, setScheduleSaved, signups, signIns, messages, certificateRequests, setCertificatesSaved, emergencyContacts }) {
+function AdminPortal({ setPage, adminLoggedIn, setAdminLoggedIn, students, hours, setHoursSaved, scheduleSlots, setScheduleSaved, signups, signIns, messages, certificateRequests, setCertificatesSaved, emergencyContacts, updateStudent, deleteStudent }) {
   const [tab, setTab] = useState("home");
   const [search, setSearch] = useState("");
 
@@ -1795,7 +1867,7 @@ function AdminPortal({ setPage, adminLoggedIn, setAdminLoggedIn, students, hours
         {tab === "calendar" && <AdminCalendar scheduleSlots={scheduleSlots} setScheduleSaved={setScheduleSaved} />}
         {tab === "signin" && <AdminSignIns signIns={signIns} search={search} />}
         {tab === "pastCodes" && <AdminPastCodes />}
-        {tab === "students" && <AdminStudents students={students.filter(s => `${s.id} ${s.firstName} ${s.lastName} ${s.parentEmail}`.toLowerCase().includes(search.toLowerCase()))} hours={hours} />}
+        {tab === "students" && <AdminStudents students={students.filter(s => `${s.id} ${s.firstName} ${s.lastName} ${s.parentEmail}`.toLowerCase().includes(search.toLowerCase()))} hours={hours} updateStudent={updateStudent} deleteStudent={deleteStudent} />}
         {tab === "hours" && <AdminHours hours={hours} students={students} search={search} approve={approve} reject={reject} />}
         {tab === "signups" && <AdminSignups signups={signups} search={search} />}
         {tab === "certificates" && <AdminCertificates requests={certificateRequests} markCertificate={markCertificate} />}
@@ -1830,7 +1902,114 @@ function AdminCalendar({ scheduleSlots, setScheduleSaved }) {
   return <div className="adminWide"><div className="dashCard"><h2>Calendar Manager</h2><p>Edit each slot for the selected date. Students only see active slots.</p><label className="inputGroup compactInput"><span>Month</span><select value={month} onChange={e => { setMonth(e.target.value); setSelectedDate(`${e.target.value}-01`); }}>{months2026.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><div className="monthGrid monthHeader"><b>Sun</b><b>Mon</b><b>Tue</b><b>Wed</b><b>Thu</b><b>Fri</b><b>Sat</b></div><div className="monthGrid">{days.map((day, index) => day ? <button key={day} className={`monthDay ${day === selectedDate ? "selectedMonthDay" : ""} ${hasSlots(day) ? "hasSlotsDay" : ""}`} onClick={() => setSelectedDate(day)}><span>{Number(day.slice(-2))}</span><small>{scheduleSlots.filter(s => s.date === day && s.active).length} slots</small></button> : <div key={`blank-${index}`} className="blankDay" />)}</div></div><form className="dashCard" onSubmit={addSlot}><h2>Add Slot for {selectedDate}</h2><div className="formGrid"><Input name="title" label="Slot Title" required /><Input name="start" label="Start Time" type="time" required /><Input name="end" label="End Time" type="time" required /><Input name="category" label="Category" required /><Input name="maxVolunteers" label="Max Volunteers" type="number" /><Input name="description" label="Description" /></div><button className="primaryBtn smallBtn">Add Slot</button></form><div className="dashCard"><h2>Edit Slots for {dateLabel(selectedDate)}</h2>{dateSlots.map(slot => <div className="editSlotCard" key={slot.id}><div className="formGrid"><label className="inputGroup"><span>Title</span><input value={slot.title} onChange={e => updateSlot(slot.id, { title: e.target.value })} /></label><label className="inputGroup"><span>Category</span><input value={slot.category} onChange={e => updateSlot(slot.id, { category: e.target.value })} /></label><label className="inputGroup"><span>Start</span><input type="time" value={slot.start} onChange={e => updateSlot(slot.id, { start: e.target.value })} /></label><label className="inputGroup"><span>End</span><input type="time" value={slot.end} onChange={e => updateSlot(slot.id, { end: e.target.value })} /></label><label className="inputGroup"><span>Max Volunteers</span><input type="number" min="1" max="5" value={slotLimit(slot)} onChange={e => updateSlot(slot.id, { maxVolunteers: Math.min(Number(e.target.value), 5) })} /></label><label className="inputGroup"><span>Description</span><input value={slot.description} onChange={e => updateSlot(slot.id, { description: e.target.value })} /></label></div><div className="buttonRow"><button className="secondaryBtn smallBtn inlineBtn" onClick={() => updateSlot(slot.id, { active: !slot.active })}>{slot.active ? "Make Inactive" : "Make Active"}</button><button className="cancelSlotBtn" onClick={() => deleteSlot(slot.id)}>Delete Slot</button></div></div>)}</div></div>;
 }
 
-function AdminStudents({ students, hours }) { return <div className="dashCard adminWide"><h2>Students List</h2>{students.map(s => { const st = statsFor(s.id, hours); return <div className="adminListItem" key={s.id}><div><b>{s.firstName} {s.lastName}</b><p>ID: {s.id} · Login: ID + first name + last name</p><p>Parent: {s.parentEmail} · {s.parentPhone}</p><p>Interests: {(s.interests || []).join(", ") || "Not selected"}</p><p>Approved: {st.approved} · Pending: {st.pending} · Tier: {st.tier}</p></div></div>; })}</div>; }
+function AdminStudents({ students, hours, updateStudent, deleteStudent }) {
+  const [viewId, setViewId] = useState("");
+  const [editId, setEditId] = useState("");
+
+  function submitEdit(e, student) {
+    e.preventDefault();
+    const f = new FormData(e.currentTarget);
+    const interestsText = String(f.get("interests") || "");
+    const interests = interestsText
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+    updateStudent({
+      ...student,
+      firstName: f.get("firstName"),
+      lastName: f.get("lastName"),
+      age: f.get("age"),
+      grade: f.get("grade"),
+      city: f.get("city"),
+      parentName: f.get("parentName"),
+      parentEmail: f.get("parentEmail"),
+      parentPhone: f.get("parentPhone"),
+      studentEmail: f.get("studentEmail"),
+      interests,
+    });
+
+    setEditId("");
+    setViewId(student.id);
+  }
+
+  function confirmDelete(student) {
+    const ok = window.confirm(`Delete ${student.firstName} ${student.lastName} (${student.id})? This removes the student and related signups/hours from the shared database.`);
+    if (!ok) return;
+    deleteStudent(student.id);
+    if (viewId === student.id) setViewId("");
+    if (editId === student.id) setEditId("");
+  }
+
+  return (
+    <div className="dashCard adminWide">
+      <h2>Students List</h2>
+      <p className="kidHelpText">Cards are minimized. Click View for full parent/contact details, Edit to update, or Delete to remove a test/student record.</p>
+
+      {students.length ? students.map((s) => {
+        const st = statsFor(s.id, hours);
+        const isViewing = viewId === s.id;
+        const isEditing = editId === s.id;
+
+        return (
+          <div className="adminListItem adminStudentMiniCard" key={s.id}>
+            <div className="studentMiniTop">
+              <div>
+                <b>{s.firstName} {s.lastName}</b>
+                <p>ID: {s.id}</p>
+              </div>
+
+              <div className="studentActionButtons">
+                <button className="secondaryBtn smallBtn inlineBtn" type="button" onClick={() => { setViewId(isViewing ? "" : s.id); setEditId(""); }}>
+                  {isViewing ? "Hide" : "View"}
+                </button>
+                <button className="secondaryBtn smallBtn inlineBtn" type="button" onClick={() => { setEditId(isEditing ? "" : s.id); setViewId(s.id); }}>
+                  {isEditing ? "Cancel Edit" : "Edit"}
+                </button>
+                <button className="dangerBtn smallBtn inlineBtn" type="button" onClick={() => confirmDelete(s)}>
+                  Delete
+                </button>
+              </div>
+            </div>
+
+            {isViewing && !isEditing && (
+              <div className="studentDetailPanel">
+                <p><b>Login:</b> Student ID + first and last name</p>
+                <p><b>Parent:</b> {s.parentName || "Not provided"} · {s.parentEmail} · {s.parentPhone || "No phone"}</p>
+                <p><b>Student:</b> Grade {s.grade || "N/A"} · Age {s.age || "N/A"} · {s.city || "No city"}</p>
+                <p><b>Student Email:</b> {s.studentEmail || "Not provided"}</p>
+                <p><b>Interests:</b> {(s.interests || []).join(", ") || "Not selected"}</p>
+                <p><b>Hours:</b> Approved {st.approved} · Pending {st.pending} · Tier {st.tier}</p>
+              </div>
+            )}
+
+            {isEditing && (
+              <form className="studentEditPanel" onSubmit={(e) => submitEdit(e, s)}>
+                <div className="formGrid">
+                  <label className="inputGroup"><span>First Name</span><input name="firstName" defaultValue={s.firstName || ""} required /></label>
+                  <label className="inputGroup"><span>Last Name</span><input name="lastName" defaultValue={s.lastName || ""} required /></label>
+                  <label className="inputGroup"><span>Age</span><input name="age" defaultValue={s.age || ""} /></label>
+                  <label className="inputGroup"><span>Grade</span><input name="grade" defaultValue={s.grade || ""} /></label>
+                  <label className="inputGroup"><span>City</span><input name="city" defaultValue={s.city || ""} /></label>
+                  <label className="inputGroup"><span>Parent/Guardian Name</span><input name="parentName" defaultValue={s.parentName || ""} /></label>
+                  <label className="inputGroup"><span>Parent Email</span><input name="parentEmail" defaultValue={s.parentEmail || ""} type="email" required /></label>
+                  <label className="inputGroup"><span>Parent Phone</span><input name="parentPhone" defaultValue={s.parentPhone || ""} /></label>
+                </div>
+                <label className="inputGroup"><span>Student Email</span><input name="studentEmail" defaultValue={s.studentEmail || ""} /></label>
+                <label className="inputGroup"><span>Interests, separated by commas</span><input name="interests" defaultValue={(s.interests || []).join(", ")} /></label>
+                <div className="buttonRow">
+                  <button className="primaryBtn smallBtn" type="submit">Save Changes</button>
+                  <button className="secondaryBtn smallBtn inlineBtn" type="button" onClick={() => setEditId("")}>Cancel</button>
+                </div>
+              </form>
+            )}
+          </div>
+        );
+      }) : <p>No students found.</p>}
+    </div>
+  );
+}
+
 function AdminHours({ hours, students, search, approve, reject }) {
   const [selectedStudentId, setSelectedStudentId] = useState("");
 
