@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import "./App.css";
 
-const BUILD_MARKER = "SHHP_ADMIN_STUDENT_ACTIONS_V28";
+const BUILD_MARKER = "SHHP_SIGNUP_SAVE_CERTIFICATES_V29";
 const ADMIN_USERNAME = "shhp.admin";
 const ADMIN_PASSWORD = "$winis1971!";
 
@@ -710,6 +710,296 @@ function printReport(parentEmail, students, hours) {
   win.print();
 }
 
+function todayLongLabel() {
+  return new Date().toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+}
+
+function certificateIssueDate(request) {
+  return request?.createdAt ? new Date(request.createdAt).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" }) : todayLongLabel();
+}
+
+function certificateHtml({ student, stats, request, mode = "preview" }) {
+  const studentName = `${student?.firstName || ""} ${student?.lastName || ""}`.trim() || request?.studentName || "Student Name";
+  const studentId = student?.id || request?.studentId || "Student ID";
+  const approvedHours = Number(stats?.approved || 0);
+  const tier = stats?.tier || "Bal Sevak";
+  const issueDate = certificateIssueDate(request);
+  const watermark = mode === "preview" ? "<div class='previewWatermark'>PREVIEW</div>" : "";
+
+  return `<!doctype html>
+<html>
+<head>
+  <title>Volunteer Certificate - ${studentName}</title>
+  <style>
+    @page { size: landscape; margin: 0; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #efe2c9;
+      color: #4d1218;
+      font-family: Georgia, "Times New Roman", serif;
+    }
+    .certificatePage {
+      width: 11in;
+      height: 8.5in;
+      margin: 0 auto;
+      padding: .36in;
+      background:
+        radial-gradient(circle at center, rgba(255,255,255,.82), rgba(255,246,220,.94) 55%, rgba(246,222,176,.98)),
+        #fff5dc;
+      position: relative;
+      overflow: hidden;
+    }
+    .outerBorder {
+      width: 100%;
+      height: 100%;
+      border: 16px solid #5a1117;
+      outline: 3px solid #d5913b;
+      outline-offset: -22px;
+      padding: .34in .48in;
+      position: relative;
+      background:
+        linear-gradient(90deg, rgba(255,255,255,.65), rgba(255,248,224,.85), rgba(255,255,255,.65));
+    }
+    .innerBorder {
+      position: absolute;
+      inset: .28in;
+      border: 2px dotted #d5913b;
+      pointer-events: none;
+    }
+    .corner {
+      position: absolute;
+      font-size: 58px;
+      color: #cc7d28;
+      opacity: .78;
+      line-height: 1;
+    }
+    .c1 { top: .18in; left: .26in; }
+    .c2 { top: .18in; right: .26in; transform: scaleX(-1); }
+    .c3 { bottom: .18in; left: .26in; transform: scaleY(-1); }
+    .c4 { bottom: .18in; right: .26in; transform: scale(-1); }
+    .topIcon {
+      text-align: center;
+      font-size: 40px;
+      margin-top: -2px;
+      color: #7a1219;
+    }
+    h1 {
+      text-align: center;
+      font-size: 42px;
+      line-height: 1;
+      margin: 0;
+      letter-spacing: 2px;
+      color: #5a1117;
+      font-weight: 700;
+    }
+    .program {
+      text-align: center;
+      font-size: 21px;
+      color: #d55b1f;
+      font-weight: 700;
+      letter-spacing: 2px;
+      margin: 8px 0 18px;
+    }
+    .title {
+      text-align: center;
+      font-size: 36px;
+      color: #5a1117;
+      margin: 0 0 20px;
+      font-weight: 700;
+      letter-spacing: 2px;
+    }
+    .name {
+      text-align: center;
+      font-size: 56px;
+      color: #6a151b;
+      margin: 8px auto 10px;
+      letter-spacing: 7px;
+      border-bottom: 2px solid #d9a15d;
+      width: 68%;
+      padding-bottom: 10px;
+    }
+    .bodyText {
+      width: 70%;
+      margin: 0 auto;
+      text-align: center;
+      color: #4a1b1c;
+      font-size: 18px;
+      line-height: 1.38;
+    }
+    .awardLine {
+      text-align: center;
+      margin: 18px auto;
+      font-size: 17px;
+      color: #b34a16;
+      font-style: italic;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+    .facts {
+      width: 74%;
+      margin: 18px auto 20px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0;
+      text-align: center;
+      color: #3e1819;
+    }
+    .fact {
+      border-right: 1px solid #c6904d;
+      padding: 0 12px;
+      min-height: 58px;
+    }
+    .fact:last-child { border-right: 0; }
+    .factIcon {
+      color: #d45d20;
+      font-size: 25px;
+      margin-bottom: 4px;
+    }
+    .fact b {
+      display: block;
+      font-size: 11px;
+      letter-spacing: 1px;
+      color: #4f1719;
+    }
+    .fact span {
+      display: block;
+      margin-top: 7px;
+      font-size: 17px;
+      color: #2f1717;
+    }
+    .signatureRow {
+      position: absolute;
+      left: .9in;
+      right: .9in;
+      bottom: .54in;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2.4in;
+      text-align: center;
+    }
+    .sigLine {
+      border-top: 2px solid #b67831;
+      padding-top: 10px;
+      color: #301819;
+      font-size: 17px;
+    }
+    .seal {
+      position: absolute;
+      left: 50%;
+      bottom: .34in;
+      transform: translateX(-50%);
+      width: 1.05in;
+      height: 1.05in;
+      border-radius: 50%;
+      border: 8px solid #7a1219;
+      background: radial-gradient(circle, #fff2c7, #f0bd64);
+      display: grid;
+      place-items: center;
+      text-align: center;
+      color: #7a1219;
+      font-weight: 700;
+      font-size: 34px;
+      box-shadow: 0 2px 10px rgba(60,0,0,.18);
+    }
+    .seal small {
+      display: block;
+      font-size: 7px;
+      letter-spacing: 1px;
+      line-height: 1;
+      margin-top: 2px;
+    }
+    .previewWatermark {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      font-family: Arial, sans-serif;
+      font-size: 92px;
+      letter-spacing: 8px;
+      color: rgba(122, 18, 25, .10);
+      transform: rotate(-18deg);
+      font-weight: 900;
+      z-index: 3;
+      pointer-events: none;
+    }
+    .actions {
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      display: flex;
+      gap: 8px;
+      font-family: Arial, sans-serif;
+      z-index: 9;
+    }
+    .actions button {
+      border: 0;
+      background: #7a1219;
+      color: white;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    @media print {
+      .actions, .previewWatermark { display: none; }
+      body { background: white; }
+      .certificatePage { margin: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="actions">
+    <button onclick="window.print()">Print</button>
+    <button onclick="window.close()">Close</button>
+  </div>
+  <div class="certificatePage">
+    ${watermark}
+    <div class="outerBorder">
+      <div class="innerBorder"></div>
+      <div class="corner c1">❦</div><div class="corner c2">❦</div><div class="corner c3">❦</div><div class="corner c4">❦</div>
+      <div class="topIcon">ॐ</div>
+      <h1>Sri HariHara Peetham</h1>
+      <div class="program">Volunteer Program</div>
+      <div class="title">Certificate of Volunteer Service</div>
+      <div class="name">${studentName}</div>
+      <div class="bodyText">
+        This certificate is proudly presented to <b>${studentName}</b> in recognition of dedicated seva,
+        responsible participation, and successful completion of volunteer service hours through the
+        Sri HariHara Peetham Volunteer Program.
+      </div>
+      <div class="awardLine">Awarded for sincere service, leadership, and community involvement.</div>
+      <div class="facts">
+        <div class="fact"><div class="factIcon">▣</div><b>VOLUNTEER ID</b><span>${studentId}</span></div>
+        <div class="fact"><div class="factIcon">♟</div><b>TIER</b><span>${tier}</span></div>
+        <div class="fact"><div class="factIcon">◷</div><b>HOURS COMPLETED</b><span>${approvedHours} Hours</span></div>
+        <div class="fact"><div class="factIcon">▣</div><b>ISSUE DATE</b><span>${issueDate}</span></div>
+      </div>
+      <div class="seal">ॐ<small>SRI HARIHARA<br/>PEETHAM</small></div>
+      <div class="signatureRow">
+        <div class="sigLine">Program Coordinator</div>
+        <div class="sigLine">Temple Representative</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
+function openCertificatePreview({ student, stats, request, print = false }) {
+  const win = window.open("", "_blank");
+  if (!win) {
+    alert("Please allow popups to preview or print the certificate.");
+    return;
+  }
+  win.document.write(certificateHtml({ student, stats, request, mode: print ? "print" : "preview" }));
+  win.document.close();
+  if (print) {
+    win.focus();
+    setTimeout(() => win.print(), 400);
+  }
+}
+
 export default function App() {
   const [page, setPage] = useState(() => pageFromUrl());
   const [students, setStudents] = useState(() => load("shhp_students", demoStudents));
@@ -841,7 +1131,6 @@ export default function App() {
   function setSignupsSaved(next) {
     setSignups(next);
     save("shhp_signups_v11", next);
-    sbUpsert("signups", next.map(signupToDb)).catch((error) => console.error(error));
   }
   function setSignInsSaved(next) {
     setSignIns(next);
@@ -978,6 +1267,15 @@ export default function App() {
     setSignupsSaved([...newSignups, ...latestSignups]);
     setMessagesSaved([...newMessages, ...load("shhp_messages", messages)]);
 
+    const slotsForDatabase = slotsToAdd.filter(Boolean);
+    sbUpsert("schedule_slots", slotsForDatabase.map(slotToDb))
+      .then(() => sbUpsert("signups", newSignups.map(signupToDb)))
+      .then(() => setDbStatus(`Shared database connected — saved ${newSignups.length} signup${newSignups.length === 1 ? "" : "s"}`))
+      .catch((error) => {
+        console.error(error);
+        setDbStatus("Signup saved on this device, but database save failed");
+      });
+
     return newSignups.length;
   }
 
@@ -1064,7 +1362,7 @@ export default function App() {
     <div className={dbStatus.includes("failed") ? "dbBanner dbBannerError" : "dbBanner"}>{dbStatus}</div>
     {currentPage === "home" && <Home setPage={setPageSaved} />}
     {currentPage === "apply" && <Apply setPage={setPageSaved} addStudent={addStudent} />}
-    {currentPage === "student" && <StudentPortal setPage={setPageSaved} students={students} hours={hours} scheduleSlots={scheduleSlots} signups={signups} signIns={signIns} messages={messages} activeStudentId={activeStudentId} setActiveStudentId={setActiveStudentIdSaved} addSignup={addSignup} cancelSignup={cancelSignup} addHours={addHours} addSignIn={addSignIn} addCertificateRequest={addCertificateRequest} setAdminLoggedIn={setAdminLoggedInSaved} />}
+    {currentPage === "student" && <StudentPortal setPage={setPageSaved} students={students} hours={hours} scheduleSlots={scheduleSlots} signups={signups} signIns={signIns} messages={messages} certificateRequests={certificateRequests} activeStudentId={activeStudentId} setActiveStudentId={setActiveStudentIdSaved} addSignup={addSignup} cancelSignup={cancelSignup} addHours={addHours} addSignIn={addSignIn} addCertificateRequest={addCertificateRequest} setAdminLoggedIn={setAdminLoggedInSaved} />}
     {currentPage === "parent" && <ParentPortal setPage={setPageSaved} students={students} hours={hours} scheduleSlots={scheduleSlots} signups={signups} messages={messages} parentLogin={parentLogin} setParentLogin={setParentLoginSaved} addSignup={addSignup} cancelSignup={cancelSignup} emergencyContacts={emergencyContacts} setEmergencySaved={setEmergencySaved} setAdminLoggedIn={setAdminLoggedInSaved} />}
     {currentPage === "admin" && <AdminPortal setPage={setPageSaved} adminLoggedIn={adminLoggedIn} setAdminLoggedIn={setAdminLoggedInSaved} students={students} hours={hours} setHoursSaved={setHoursSaved} scheduleSlots={scheduleSlots} setScheduleSaved={setScheduleSaved} signups={signups} signIns={signIns} messages={messages} certificateRequests={certificateRequests} setCertificatesSaved={setCertificatesSaved} emergencyContacts={emergencyContacts} updateStudent={updateStudent} deleteStudent={deleteStudent} />}
     {currentPage === "about" && <AboutPage setPage={setPageSaved} />}
@@ -1232,17 +1530,17 @@ function Apply({ setPage, addStudent }) {
   </div><button className="primaryBtn">Submit Application</button></form></SimplePage>;
 }
 
-function StudentPortal({ setPage, students, hours, scheduleSlots, signups, signIns, messages, activeStudentId, setActiveStudentId, addSignup, cancelSignup, addHours, addSignIn, addCertificateRequest, setAdminLoggedIn }) {
+function StudentPortal({ setPage, students, hours, scheduleSlots, signups, signIns, messages, certificateRequests, activeStudentId, setActiveStudentId, addSignup, cancelSignup, addHours, addSignIn, addCertificateRequest, setAdminLoggedIn }) {
   const student = students.find((s) => s.id === activeStudentId);
   if (!student) return <SimplePage title="Student Portal Login" setPage={setPage}><StudentLogin students={students} setActiveStudentId={setActiveStudentId} setPage={setPage} /></SimplePage>;
-  return <StudentShell setPage={setPage} student={student} hours={hours} scheduleSlots={scheduleSlots} signups={signups.filter(s => s.studentId === student.id)} allSignups={signups} signIns={signIns.filter(s => s.studentId === student.id)} messages={messages.filter(m => m.studentId === student.id)} addSignup={addSignup} cancelSignup={cancelSignup} addHours={addHours} addSignIn={addSignIn} addCertificateRequest={addCertificateRequest} logout={() => setActiveStudentId("")} />;
+  return <StudentShell setPage={setPage} student={student} hours={hours} scheduleSlots={scheduleSlots} signups={signups.filter(s => s.studentId === student.id)} allSignups={signups} signIns={signIns.filter(s => s.studentId === student.id)} messages={messages.filter(m => m.studentId === student.id)} certificateRequests={certificateRequests.filter(r => r.studentId === student.id)} addSignup={addSignup} cancelSignup={cancelSignup} addHours={addHours} addSignIn={addSignIn} addCertificateRequest={addCertificateRequest} logout={() => setActiveStudentId("")} />;
 }
 
-function StudentShell({ setPage, student, hours, scheduleSlots, signups, allSignups, signIns, messages, addSignup, cancelSignup, addHours, addSignIn, addCertificateRequest, logout }) {
+function StudentShell({ setPage, student, hours, scheduleSlots, signups, allSignups, signIns, messages, certificateRequests, addSignup, cancelSignup, addHours, addSignIn, addCertificateRequest, logout }) {
   const [tab, setTab] = useState("home");
   const stats = statsFor(student.id, hours);
-  const tabs = [["home", "Home"], ["schedule", "Sign Up / Schedule Slots"], ["signin", "Sign In"], ["submit", "Submit Hours"], ["approved", "Approved Hours"], ["tier", "Current Tier"], ["certificate", "Request Certificate"], ["contact", "Contact Us"]];
-  return <div className="studentPortalPage"><div className="studentPortalTop"><div><h1>Student Portal</h1><p>{student.firstName} {student.lastName} · ID {student.id}</p></div><div className="studentTopActions"><button className="logoutBtn" onClick={() => setPage("home")}>Home</button><button className="logoutBtn" onClick={logout}>Log Out</button></div></div><div className="studentTabs">{tabs.map(([key, label]) => <button key={key} className={tab === key ? "activeStudentTab" : ""} onClick={() => setTab(key)}>{label}</button>)}</div><main className="studentPortalContent"><div className="studentTabStack">{tab === "home" && <StudentHome student={student} signups={signups} cancelSignup={cancelSignup} setTab={setTab} />}{tab === "schedule" && <StudentSchedule student={student} scheduleSlots={scheduleSlots} signups={signups} allSignups={allSignups} addSignup={addSignup} setTab={setTab} />}{tab === "signin" && <StudentSignIn student={student} signups={signups} signIns={signIns} addSignIn={addSignIn} />}{tab === "submit" && <SubmitHours student={student} addHours={addHours} />}{tab === "approved" && <ApprovedHours hours={hours.filter(h => h.studentId === student.id)} />}{tab === "tier" && <CurrentTier stats={stats} />}{tab === "certificate" && <CertificateTab student={student} stats={stats} addCertificateRequest={addCertificateRequest} />}{tab === "contact" && <ContactBox />}</div></main></div>;
+  const tabs = [["home", "Home"], ["schedule", "Sign Up / Schedule Slots"], ["signin", "Sign In"], ["submit", "Submit Hours"], ["approved", "Approved Hours"], ["tier", "Current Tier"], ["certificate", "Certificate"], ["contact", "Contact Us"]];
+  return <div className="studentPortalPage"><div className="studentPortalTop"><div><h1>Student Portal</h1><p>{student.firstName} {student.lastName} · ID {student.id}</p></div><div className="studentTopActions"><button className="logoutBtn" onClick={() => setPage("home")}>Home</button><button className="logoutBtn" onClick={logout}>Log Out</button></div></div><div className="studentTabs">{tabs.map(([key, label]) => <button key={key} className={tab === key ? "activeStudentTab" : ""} onClick={() => setTab(key)}>{label}</button>)}</div><main className="studentPortalContent"><div className="studentTabStack">{tab === "home" && <StudentHome student={student} signups={signups} cancelSignup={cancelSignup} setTab={setTab} />}{tab === "schedule" && <StudentSchedule student={student} scheduleSlots={scheduleSlots} signups={signups} allSignups={allSignups} addSignup={addSignup} setTab={setTab} />}{tab === "signin" && <StudentSignIn student={student} signups={signups} signIns={signIns} addSignIn={addSignIn} />}{tab === "submit" && <SubmitHours student={student} addHours={addHours} />}{tab === "approved" && <ApprovedHours hours={hours.filter(h => h.studentId === student.id)} />}{tab === "tier" && <CurrentTier stats={stats} />}{tab === "certificate" && <CertificateTab student={student} stats={stats} certificateRequests={certificateRequests} addCertificateRequest={addCertificateRequest} />}{tab === "contact" && <ContactBox />}</div></main></div>;
 }
 
 function StudentHome({ student, signups, cancelSignup, setTab }) {
@@ -1870,7 +2168,7 @@ function AdminPortal({ setPage, adminLoggedIn, setAdminLoggedIn, students, hours
         {tab === "students" && <AdminStudents students={students.filter(s => `${s.id} ${s.firstName} ${s.lastName} ${s.parentEmail}`.toLowerCase().includes(search.toLowerCase()))} hours={hours} updateStudent={updateStudent} deleteStudent={deleteStudent} />}
         {tab === "hours" && <AdminHours hours={hours} students={students} search={search} approve={approve} reject={reject} />}
         {tab === "signups" && <AdminSignups signups={signups} search={search} />}
-        {tab === "certificates" && <AdminCertificates requests={certificateRequests} markCertificate={markCertificate} />}
+        {tab === "certificates" && <AdminCertificates requests={certificateRequests} students={students} hours={hours} markCertificate={markCertificate} />}
         {tab === "emergency" && <AdminEmergencyInfo students={students} emergencyContacts={emergencyContacts} search={search} />}
         {tab === "messages" && <AdminMessages messages={messages} />}
       </main>
@@ -2086,7 +2384,46 @@ function AdminHours({ hours, students, search, approve, reject }) {
 
 function AdminSignups({ signups, search }) { const filtered = signups.filter(s => `${s.studentName} ${s.title} ${s.date} ${s.time}`.toLowerCase().includes(search.toLowerCase())); return <div className="dashCard adminWide"><h2>Slot Signups</h2>{filtered.length ? filtered.map(s => <div className="historyItem" key={s.id}><div><b>{s.studentName}</b><p>{s.title} · {s.date} · {s.time}</p><p>{s.category}</p></div></div>) : <p>No slot signups.</p>}</div>; }
 function AdminSignIns({ signIns, search }) { const filtered = signIns.filter(s => `${s.studentName} ${s.studentId} ${s.date} ${s.session}`.toLowerCase().includes(search.toLowerCase())); return <div className="dashCard adminWide"><h2>Student Sign-Ins</h2>{filtered.length ? filtered.map(s => <div className="historyItem" key={s.id}><div><b>{s.studentName}</b><p>{s.date} · {s.session} · {s.time}</p><p>ID: {s.studentId}</p></div><span className="statusBadge approved">Signed In</span></div>) : <p>No sign-ins yet.</p>}</div>; }
-function AdminCertificates({ requests, markCertificate }) { return <div className="dashCard adminWide"><h2>Certificate Requests</h2>{requests.length ? requests.map((r) => <div className="adminListItem" key={r.id}><div><b>{r.studentName}</b><p>ID: {r.studentId} · Parent: {r.parentEmail}</p><span className={"statusBadge " + r.status.toLowerCase()}>{r.status}</span></div>{r.status === "Pending" && <div className="adminActions"><button className="primaryBtn smallBtn" onClick={() => markCertificate(r.id, "Approved")}>Approve</button><button className="secondaryBtn smallBtn inlineBtn" onClick={() => markCertificate(r.id, "Rejected")}>Reject</button></div>}</div>) : <p>No certificate requests yet.</p>}</div>; }
+function AdminCertificates({ requests, students, hours, markCertificate }) {
+  function studentForRequest(request) {
+    return students.find((student) => student.id === request.studentId) || {
+      id: request.studentId,
+      firstName: request.studentName?.split(" ")[0] || "",
+      lastName: request.studentName?.split(" ").slice(1).join(" ") || "",
+      parentEmail: request.parentEmail || "",
+    };
+  }
+
+  return (
+    <div className="dashCard adminWide">
+      <h2>Certificate Requests</h2>
+      <p className="kidHelpText">Use Preview to review the generated certificate before approving or sharing. Signature lines stay blank for in-person signatures.</p>
+      {requests.length ? requests.map((r) => {
+        const student = studentForRequest(r);
+        const stats = statsFor(student.id, hours);
+        return (
+          <div className="adminListItem certificateRequestCard" key={r.id}>
+            <div>
+              <b>{r.studentName}</b>
+              <p>ID: {r.studentId} · Parent: {r.parentEmail}</p>
+              <p>Approved Hours: {stats.approved} · Tier: {stats.tier}</p>
+              <span className={"statusBadge " + r.status.toLowerCase()}>{r.status}</span>
+            </div>
+            <div className="adminActions certificateActions">
+              <button className="secondaryBtn smallBtn inlineBtn" type="button" onClick={() => openCertificatePreview({ student, stats, request: r })}>Preview</button>
+              {r.status === "Approved" && <button className="primaryBtn smallBtn" type="button" onClick={() => openCertificatePreview({ student, stats, request: r, print: true })}>Print</button>}
+              {r.status === "Pending" && <>
+                <button className="primaryBtn smallBtn" onClick={() => markCertificate(r.id, "Approved")}>Approve</button>
+                <button className="secondaryBtn smallBtn inlineBtn" onClick={() => markCertificate(r.id, "Rejected")}>Reject</button>
+              </>}
+            </div>
+          </div>
+        );
+      }) : <p>No certificate requests yet.</p>}
+    </div>
+  );
+}
+
 function AdminEmergencyInfo({ students, emergencyContacts, search }) {
   const rows = students
     .filter((student) => emergencyContacts[student.id])
@@ -2120,7 +2457,57 @@ function AdminMessages({ messages }) { return <div className="dashCard adminWide
 function SubmitHours({ student, addHours }) { function submit(e) { e.preventDefault(); const f = new FormData(e.currentTarget); addHours(student.id, { eventName: f.get("eventName"), date: f.get("date"), hours: Number(f.get("hours")), notes: f.get("notes") }); e.currentTarget.reset(); alert("Hours submitted for admin approval."); } return <form className="dashCard" onSubmit={submit}><h2>Submit Volunteer Hours</h2><div className="formGrid"><Input name="eventName" label="Seva/Event Name" required /><Input name="date" label="Date" type="date" required /><Input name="hours" label="Hours" type="number" required /><Input name="notes" label="Notes" /></div><button className="primaryBtn smallBtn">Submit Hours</button></form>; }
 function ApprovedHours({ hours }) { return <><History title="Approved Hours" items={hours.filter(h => h.status === "Approved")} /><History title="Pending Hours" items={hours.filter(h => h.status === "Pending")} /></>; }
 function CurrentTier({ stats }) { return <div className="studentPanel tierFocus"><h2>Current Tier</h2><div className="credentialGrid"><div className="credentialCard"><span>Current Tier</span><h3>{stats.tier}</h3></div><div className="credentialCard"><span>Approved Hours</span><h3>{stats.approved}</h3></div></div>{stats.nextTierHours === null ? <p>You are at the highest tier.</p> : <><p><b>{stats.hoursToNext}</b> more approved hours needed for the next tier.</p><progress value={stats.progressValue} max={stats.progressMax}></progress></>}<div className="tierGrid">{tierLevels.map(t => <div className="tierCard" key={t.name}><h3>{t.name}</h3><p>{t.min}+ approved hours</p></div>)}</div></div>; }
-function CertificateTab({ student, stats, addCertificateRequest }) { const [requested, setRequested] = useState(false); return <div className="studentPanel"><h2>Request Certificate</h2><p>Request a seva certificate for school or personal records.</p><div className="credentialGrid"><div className="credentialCard"><span>Approved Hours</span><h3>{stats.approved}</h3></div><div className="credentialCard"><span>Current Tier</span><h3>{stats.tier}</h3></div></div><button className="primaryBtn" onClick={() => { addCertificateRequest(student); setRequested(true); }}>Request Certificate</button>{requested && <p className="successText">Certificate request sent to admin.</p>}</div>; }
+function CertificateTab({ student, stats, certificateRequests, addCertificateRequest }) {
+  const [requested, setRequested] = useState(false);
+  const approvedRequest = [...certificateRequests].find((request) => request.status === "Approved");
+  const pendingRequest = [...certificateRequests].find((request) => request.status === "Pending");
+  const rejectedRequest = [...certificateRequests].find((request) => request.status === "Rejected");
+
+  function requestCertificate() {
+    addCertificateRequest(student);
+    setRequested(true);
+  }
+
+  return (
+    <div className="studentPanel certificatePanel">
+      <h2>Certificate</h2>
+
+      <section className="certificateSection">
+        <h3>Request Certificate</h3>
+        <p>Request a seva certificate for school, personal records, or volunteer documentation. Admin must approve it before download/printing is available.</p>
+        <div className="credentialGrid">
+          <div className="credentialCard"><span>Approved Hours</span><h3>{stats.approved}</h3></div>
+          <div className="credentialCard"><span>Current Tier</span><h3>{stats.tier}</h3></div>
+        </div>
+
+        {pendingRequest ? (
+          <p className="successText">Certificate request is pending admin approval.</p>
+        ) : (
+          <button className="primaryBtn" onClick={requestCertificate}>Request Certificate</button>
+        )}
+        {requested && <p className="successText">Certificate request sent to admin.</p>}
+        {rejectedRequest && !pendingRequest && !approvedRequest && <p className="errorText">Your previous request was rejected. Please contact the volunteer coordinator if you need help.</p>}
+      </section>
+
+      <section className="certificateSection">
+        <h3>Certificate Download</h3>
+        {approvedRequest ? (
+          <>
+            <p>Your certificate has been approved. Preview it first, then print or save as PDF.</p>
+            <div className="buttonRow">
+              <button className="secondaryBtn smallBtn inlineBtn" type="button" onClick={() => openCertificatePreview({ student, stats, request: approvedRequest })}>Preview Certificate</button>
+              <button className="primaryBtn smallBtn" type="button" onClick={() => openCertificatePreview({ student, stats, request: approvedRequest, print: true })}>Print / Save Certificate</button>
+            </div>
+            <p className="smallMuted">Signature lines are left blank. Please come in person for official signatures.</p>
+          </>
+        ) : (
+          <p>No approved certificate is available yet. Once admin approves your request, preview and print buttons will appear here.</p>
+        )}
+      </section>
+    </div>
+  );
+}
+
 function ContactBox() {
   return (
     <div className="studentPanel contactBoxPanel">
