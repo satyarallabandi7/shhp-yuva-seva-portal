@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import "./App.css";
 
-const BUILD_MARKER = "SHHP_SIGNIN_TICKETS_ADMIN_SIGNUPS_V31";
+const BUILD_MARKER = "SHHP_DETAIL_TICKET_UI_CHECKBOXES_V32";
 const ADMIN_USERNAME = "shhp.admin";
 const ADMIN_PASSWORD = "$winis1971!";
 
@@ -1735,8 +1735,9 @@ function StudentShell({ setPage, student, hours, scheduleSlots, signups, allSign
     save(`shhp_student_tab_v30_${student.id}`, nextTab);
   }
   const stats = statsFor(student.id, hours);
-  const tabs = [["home", "Home"], ["schedule", "Sign Up / Schedule Slots"], ["signin", "Sign In"], ["submit", "Submit Hours"], ["approved", "Approved Hours"], ["tier", "Current Tier"], ["certificate", "Certificate"], ["messages", "Message Admin"], ["contact", "Contact Us"]];
-  return <div className="studentPortalPage"><div className="studentPortalTop"><div><h1>Student Portal</h1><p>{student.firstName} {student.lastName} · ID {student.id}</p></div><div className="studentTopActions"><button className="logoutBtn" onClick={() => setPage("home")}>Home</button><button className="logoutBtn" onClick={logout}>Log Out</button></div></div><div className="studentTabs">{tabs.map(([key, label]) => <button key={key} className={tab === key ? "activeStudentTab" : ""} onClick={() => setTab(key)}>{label}</button>)}</div><main className="studentPortalContent"><div className="studentTabStack">{tab === "home" && <StudentHome student={student} signups={signups} cancelSignup={cancelSignup} setTab={setTab} />}{tab === "schedule" && <StudentSchedule student={student} scheduleSlots={scheduleSlots} signups={signups} allSignups={allSignups} addSignup={addSignup} setTab={setTab} />}{tab === "signin" && <StudentSignIn student={student} signups={signups} signIns={signIns} addSignIn={addSignIn} />}{tab === "submit" && <SubmitHours student={student} addHours={addHours} />}{tab === "approved" && <ApprovedHours hours={hours.filter(h => h.studentId === student.id)} />}{tab === "tier" && <CurrentTier stats={stats} />}{tab === "certificate" && <CertificateTab student={student} stats={stats} certificateRequests={certificateRequests} addCertificateRequest={addCertificateRequest} />}{tab === "messages" && <StudentTickets student={student} tickets={tickets} createTicket={createTicket} />}{tab === "contact" && <ContactBox />}</div></main></div>;
+  const studentReplyCount = tickets.filter((ticket) => ticket.status === "Replied").length;
+  const tabs = [["home", "Home"], ["schedule", "Sign Up / Schedule Slots"], ["signin", "Sign In"], ["submit", "Submit Hours"], ["approved", "Approved Hours"], ["tier", "Current Tier"], ["certificate", "Certificate"], ["messages", "Message Admin", studentReplyCount], ["contact", "Contact Us"]];
+  return <div className="studentPortalPage"><div className="studentPortalTop"><div><h1>Student Portal</h1><p>{student.firstName} {student.lastName} · ID {student.id}</p></div><div className="studentTopActions"><button className="logoutBtn" onClick={() => setPage("home")}>Home</button><button className="logoutBtn" onClick={logout}>Log Out</button></div></div><div className="studentTabs">{tabs.map(([key, label, count]) => <button key={key} className={tab === key ? "activeStudentTab" : ""} onClick={() => setTab(key)}><span>{label}</span>{count > 0 && <span className="tabCountBadge">{count}</span>}</button>)}</div><main className="studentPortalContent"><div className="studentTabStack">{tab === "home" && <StudentHome student={student} signups={signups} cancelSignup={cancelSignup} setTab={setTab} />}{tab === "schedule" && <StudentSchedule student={student} scheduleSlots={scheduleSlots} signups={signups} allSignups={allSignups} addSignup={addSignup} setTab={setTab} />}{tab === "signin" && <StudentSignIn student={student} signups={signups} signIns={signIns} addSignIn={addSignIn} />}{tab === "submit" && <SubmitHours student={student} addHours={addHours} />}{tab === "approved" && <ApprovedHours hours={hours.filter(h => h.studentId === student.id)} />}{tab === "tier" && <CurrentTier stats={stats} />}{tab === "certificate" && <CertificateTab student={student} stats={stats} certificateRequests={certificateRequests} addCertificateRequest={addCertificateRequest} />}{tab === "messages" && <StudentTickets student={student} tickets={tickets} createTicket={createTicket} />}{tab === "contact" && <ContactBox />}</div></main></div>;
 }
 
 function StudentHome({ student, signups, cancelSignup, setTab }) {
@@ -1967,23 +1968,32 @@ function StudentSignIn({ student, signups, signIns, addSignIn }) {
           </select>
         </label>
 
-        <label className="inputGroup">
+        <div className="inputGroup">
           <span>Select Time Slot(s)</span>
-          <select
-            multiple
-            className="multiSelectSlots"
-            value={selectedSlotIds}
-            onChange={(e) => setSelectedSlotIds(Array.from(e.target.selectedOptions).map((option) => option.value))}
-          >
-            {sessionSlots.map((signup) => (
-              <option key={signup.id} value={signup.id} disabled={alreadySignedSlotIds.has(signup.id)}>
-                {signup.time} · {signup.title}{alreadySignedSlotIds.has(signup.id) ? " · already signed in" : ""}
-              </option>
-            ))}
-          </select>
+          <div className="slotCheckboxList">
+            {sessionSlots.map((signup) => {
+              const checked = selectedSlotIds.includes(signup.id);
+              const alreadySigned = alreadySignedSlotIds.has(signup.id);
+              return (
+                <label key={signup.id} className={alreadySigned ? "slotCheckItem disabledSlotCheck" : checked ? "slotCheckItem selectedSlotCheck" : "slotCheckItem"}>
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    disabled={alreadySigned}
+                    onChange={(e) => {
+                      if (e.target.checked) setSelectedSlotIds([...selectedSlotIds, signup.id]);
+                      else setSelectedSlotIds(selectedSlotIds.filter((id) => id !== signup.id));
+                    }}
+                  />
+                  <span className="fakeCheck">{checked ? "✓" : ""}</span>
+                  <span className="slotCheckText">{signup.time} · {signup.title}{alreadySigned ? " · already signed in" : ""}</span>
+                </label>
+              );
+            })}
+          </div>
           {!sessionSlots.length && <small>No {session.toLowerCase()} slots signed up for today.</small>}
-          {sessionSlots.length > 0 && <small>Tip: hold Command/Ctrl to select more than one on desktop. On mobile, tap the list to choose multiple.</small>}
-        </label>
+          {sessionSlots.length > 0 && <small>Select one or more slots you are attending now.</small>}
+        </div>
 
         <label className="inputGroup compactInput">
           <span>Enter 4-Digit Code</span>
@@ -2094,11 +2104,12 @@ function ParentShell({ setPage, parentEmail, children, hours, scheduleSlots, sig
     setTabRaw(nextTab);
     save("shhp_parent_tab_v30", nextTab);
   }
+  const parentReplyCount = tickets.filter((ticket) => ticket.status === "Replied").length;
   const tabs = [
     ["kids", "View Kids"],
     ["tier", "Hour Tier"],
     ["emergency", "Emergency Contact / Notes"],
-    ["messages", "Message Admin"],
+    ["messages", "Message Admin", parentReplyCount],
     ["pdf", "Printable PDF"],
   ];
 
@@ -2116,9 +2127,9 @@ function ParentShell({ setPage, parentEmail, children, hours, scheduleSlots, sig
       </div>
 
       <div className="studentTabs">
-        {tabs.map(([key, label]) => (
+        {tabs.map(([key, label, count]) => (
           <button key={key} className={tab === key ? "activeStudentTab" : ""} onClick={() => setTab(key)}>
-            {label}
+            <span>{label}</span>{count > 0 && <span className="tabCountBadge">{count}</span>}
           </button>
         ))}
       </div>
@@ -2361,6 +2372,8 @@ function AdminPortal({ setPage, adminLoggedIn, setAdminLoggedIn, students, hours
   function reject(id) { setHoursSaved(hours.map((h) => h.id === id ? { ...h, status: "Rejected" } : h)); }
   function markCertificate(id, status) { setCertificatesSaved(certificateRequests.map((request) => request.id === id ? { ...request, status } : request)); }
 
+  const studentInboxCount = tickets.filter((ticket) => ticket.senderType === "student" && ticket.status !== "Closed").length;
+  const parentInboxCount = tickets.filter((ticket) => ticket.senderType === "parent" && ticket.status !== "Closed").length;
   const adminTabs = [
     ["home", "Home / View Code"],
     ["calendar", "Calendar Manager"],
@@ -2370,8 +2383,8 @@ function AdminPortal({ setPage, adminLoggedIn, setAdminLoggedIn, students, hours
     ["hours", "Approve Hours"],
     ["signups", "Slot Signups"],
     ["certificates", "Certificates"],
-    ["studentInbox", "Student Inbox"],
-    ["parentInbox", "Parent Inbox"],
+    ["studentInbox", "Student Inbox", studentInboxCount],
+    ["parentInbox", "Parent Inbox", parentInboxCount],
     ["emergency", "Emergency Info"],
     ["messages", "System Log"],
   ];
@@ -2390,9 +2403,9 @@ function AdminPortal({ setPage, adminLoggedIn, setAdminLoggedIn, students, hours
       </div>
 
       <div className="adminTabs bigPortalTabs">
-        {adminTabs.map(([key, label]) => (
+        {adminTabs.map(([key, label, count]) => (
           <button key={key} onClick={() => setTab(key)} className={tab === key ? "activeTab" : ""}>
-            {label}
+            <span>{label}</span>{count > 0 && <span className="tabCountBadge">{count}</span>}
           </button>
         ))}
       </div>
@@ -2514,13 +2527,12 @@ function AdminStudents({ students, hours, updateStudent, deleteStudent }) {
             </div>
 
             {isViewing && !isEditing && (
-              <div className="studentDetailPanel">
-                <p><b>Login:</b> Student ID + first and last name</p>
-                <p><b>Parent:</b> {s.parentName || "Not provided"} · {s.parentEmail} · {s.parentPhone || "No phone"}</p>
-                <p><b>Student:</b> Grade {s.grade || "N/A"} · Age {s.age || "N/A"} · {s.city || "No city"}</p>
-                <p><b>Student Email:</b> {s.studentEmail || "Not provided"}</p>
-                <p><b>Interests:</b> {(s.interests || []).join(", ") || "Not selected"}</p>
-                <p><b>Hours:</b> Approved {st.approved} · Pending {st.pending} · Tier {st.tier}</p>
+              <div className="studentDetailPanel structuredDetails">
+                <div className="detailRow"><span className="detailLabel">Parent</span><span className="detailValue">{s.parentName || "Not provided"} · {s.parentEmail} · {s.parentPhone || "No phone"}</span></div>
+                <div className="detailRow"><span className="detailLabel">Student</span><span className="detailValue">Grade {s.grade || "N/A"} · Age {s.age || "N/A"} · {s.city || "No city"}</span></div>
+                <div className="detailRow"><span className="detailLabel">Student Email</span><span className="detailValue">{s.studentEmail || "Not provided"}</span></div>
+                <div className="detailRow"><span className="detailLabel">Interests</span><span className="detailValue">{(s.interests || []).join(", ") || "Not selected"}</span></div>
+                <div className="detailRow"><span className="detailLabel">Hours</span><span className="detailValue">Approved {st.approved} · Pending {st.pending} · Tier {st.tier}</span></div>
               </div>
             )}
 
@@ -2927,20 +2939,26 @@ function TicketList({ tickets }) {
     <div className="ticketList">
       {tickets.length ? tickets.map((ticket) => (
         <div className="ticketCard" key={ticket.id}>
-          <div className="ticketHeader">
+          <div className="ticketMetaBox">
             <div>
               <b>Ticket #{ticket.ticketNumber}</b>
               <p>{ticket.title}</p>
+              <small>Created: {ticket.createdAt}</small>
             </div>
             <TicketStatusBadge status={ticket.status} />
           </div>
-          <p className="ticketBody">{ticket.body}</p>
-          <small>Created: {ticket.createdAt}</small>
+          <div className="ticketMessageBox">
+            <span className="messageLabel">Your Message</span>
+            <p className="ticketBody">{ticket.body}</p>
+          </div>
           {ticket.replies?.length ? (
             <div className="ticketReplies">
               <b>Admin Replies</b>
               {ticket.replies.map((reply, index) => (
-                <p key={`${ticket.id}-reply-${index}`}><b>{reply.from}:</b> {reply.body} <small>{reply.createdAt}</small></p>
+                <div className="replyItem" key={`${ticket.id}-reply-${index}`}>
+                  <div className="replyMeta"><b>{reply.from}</b><span>{reply.createdAt}</span></div>
+                  <p>{reply.body}</p>
+                </div>
               ))}
             </div>
           ) : <p className="smallMuted">No admin reply yet.</p>}
@@ -3058,22 +3076,30 @@ function AdminTickets({ title, tickets, search, replyTicket, closeTicket, delete
 
       {filtered.length ? filtered.map((ticket) => (
         <div className="adminTicketCard" key={ticket.id}>
-          <div className="ticketHeader">
+          <div className="ticketMetaBox adminTicketMeta">
             <div>
               <b>Ticket #{ticket.ticketNumber}: {ticket.title}</b>
-              <p>{ticket.studentName || "General"} · ID: {ticket.studentId || "N/A"} · Parent: {ticket.parentEmail || "N/A"}</p>
+              <p><span className="metaLabel">Sender</span> <span className="metaValue">{ticket.studentName || "General"}</span></p>
+              <p><span className="metaLabel">Student ID</span> <span className="metaValue">{ticket.studentId || "N/A"}</span></p>
+              <p><span className="metaLabel">Parent Email</span> <span className="metaValue">{ticket.parentEmail || "N/A"}</span></p>
               <small>Created: {ticket.createdAt}</small>
             </div>
             <TicketStatusBadge status={ticket.status} />
           </div>
 
-          <p className="ticketBody">{ticket.body}</p>
+          <div className="ticketMessageBox adminMessageBox">
+            <span className="messageLabel">Original Message</span>
+            <p className="ticketBody">{ticket.body}</p>
+          </div>
 
           {ticket.replies?.length ? (
             <div className="ticketReplies">
               <b>Replies</b>
               {ticket.replies.map((reply, index) => (
-                <p key={`${ticket.id}-admin-reply-${index}`}><b>{reply.from}:</b> {reply.body} <small>{reply.createdAt}</small></p>
+                <div className="replyItem" key={`${ticket.id}-admin-reply-${index}`}>
+                  <div className="replyMeta"><b>{reply.from}</b><span>{reply.createdAt}</span></div>
+                  <p>{reply.body}</p>
+                </div>
               ))}
             </div>
           ) : null}
